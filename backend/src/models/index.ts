@@ -5,3 +5,4 @@ export { Cart, ICartDocument, ICart, ICartItem } from './cart.model';
 export { ProductType, IProductTypeDocument, IProductType, IProductField } from './product-type.model';
 export { Role, IRoleDocument, IRole } from './role.model';
 export { Permission, IPermissionDocument, IPermission, PermissionAction } from './permission.model';
+export { Configuracion, getConfiguracion, updateConfiguracion, IConfiguracion, IShippingConfig, IPaymentMethod } from './configuracion.model';

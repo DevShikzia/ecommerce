@@ -6,4 +6,10 @@ export interface ApiResponse<T> {
   data?: T;
   message?: string;
   errors?: unknown[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
 }

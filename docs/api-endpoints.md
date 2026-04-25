@@ -965,3 +965,489 @@ const result = await uploadImageToCloudinary('/path/to/image.jpg');
 ```
 
 3. La imagen se redimensiona automáticamente a 1200x1200 con optimización de calidad.
+
+---
+
+## Endpoints de Carrito
+
+Gestión del carrito de compras. Requiere autenticación JWT.
+
+### GET /api/v1/cart
+Obtiene el carrito del usuario autenticado.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "507f1f77bcf86cd799439011",
+    "user": "507f1f77bcf86cd799439010",
+    "items": [
+      {
+        "product": "507f1f77bcf86cd799439012",
+        "productName": "Laptop Pro",
+        "quantity": 2,
+        "price": 150000
+      }
+    ],
+    "totalPrice": 300000,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+}
+```
+
+### POST /api/v1/cart/add
+Agrega un producto al carrito.
+
+**Headers**: `Authorization: Bearer <access_token>`
+**Content-Type**: `application/json`
+
+**Body**:
+```json
+{
+  "productId": "507f1f77bcf86cd799439012",
+  "quantity": 1
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": { ...carrito actualizado },
+  "message": "Producto agregado al carrito"
+}
+```
+
+**Errores**:
+- `400`: ID del producto requerido
+- `400`: Producto no encontrado
+- `400`: Producto no disponible
+- `400`: Stock insuficiente
+
+### PUT /api/v1/cart/item
+Actualiza la cantidad de un producto en el carrito.
+
+**Headers**: `Authorization: Bearer <access_token>`
+**Content-Type**: `application/json`
+
+**Body**:
+```json
+{
+  "productId": "507f1f77bcf86cd799439012",
+  "quantity": 3
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": { ...carrito actualizado },
+  "message": "Carrito actualizado"
+}
+```
+
+### DELETE /api/v1/cart/item/:productId
+Elimina un producto del carrito.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": { ...carrito actualizado },
+  "message": "Producto eliminado del carrito"
+}
+```
+
+### DELETE /api/v1/cart/clear
+Vacía el carrito del usuario.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "message": "Carrito vaciado"
+}
+```
+
+### POST /api/v1/cart/migrate
+Migra el carrito de localStorage al carrito del usuario logueado.
+
+**Headers**: `Authorization: Bearer <access_token>`
+**Content-Type**: `application/json`
+
+**Body**:
+```json
+{
+  "localCartItems": [
+    { "productId": "507f1f77bcf86cd799439012", "quantity": 1 },
+    { "productId": "507f1f77bcf86cd799439013", "quantity": 2 }
+  ]
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": { ...carrito migrated },
+  "message": "Carrito migrado correctamente"
+}
+```
+
+---
+
+## Endpoints de Órdenes
+
+Gestión de órdenes y checkout. Requiere autenticación JWT.
+
+### GET /api/v1/orders
+Obtiene las órdenes del usuario autenticado.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Query Params**:
+| Parámetro |Tipo|Descripción|Default|
+|---------|---|-----------|-------|
+| page |number|Número de página|1|
+| limit |number|Cantidad por página|20|
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "user": "507f1f77bcf86cd799439010",
+      "items": [...],
+      "shippingAddress": {
+        "street": "Av. Libertador",
+        "number": "1000",
+        "city": "Buenos Aires",
+        "province": "CABA",
+        "postalCode": "1001"
+      },
+      "paymentInfo": {
+        "method": "mercadopago",
+        "status": "approved"
+      },
+      "totalPrice": 30500,
+      "status": "processing",
+      "paymentMethod": "MercadoPago",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 5,
+    "pages": 1
+  }
+}
+```
+
+### GET /api/v1/orders/:id
+Obtiene una orden por su ID.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": { ...orden completa }
+}
+```
+
+### POST /api/v1/orders
+Crea una nueva orden (checkout).
+
+**Headers**: `Authorization: Bearer <access_token>`
+**Content-Type**: `application/json`
+
+**Body**:
+```json
+{
+  "shippingAddress": {
+    "street": "Av. Libertador",
+    "number": "1000",
+    "floor": "5",
+    "apartment": "A",
+    "city": "Buenos Aires",
+    "province": "CABA",
+    "postalCode": "1001"
+  },
+  "paymentMethod": "mercadopago",
+  "paymentMethodType": "mercadopago"
+}
+```
+
+**Response (201 Created)**
+```json
+{
+  "success": true,
+  "data": { ...orden creada },
+  "message": "Orden creada correctamente"
+}
+```
+
+### POST /api/v1/orders/preference
+Crea una preferencia de pago de MercadoPago para una orden.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "preferenceId": "1234567890",
+    "initPoint": "https://www.mercadopago.com.ar/checkout/preference?pref..."
+  }
+}
+```
+
+### GET /api/v1/orders/payment-methods
+Obtiene los métodos de pago configurados por el admin.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "paymentMethods": [
+      { "id": "mercadopago", "name": "MercadoPago", "type": "mercadopago", "enabled": true },
+      { "id": "cash", "name": "Efectivo", "type": "cash", "enabled": true, "instructions": "Pago contra entrega" },
+      { "id": "transfer", "name": "Transferencia", "type": "transfer", "enabled": true, "instructions": "CBU: 1234567890123456789012" }
+    ],
+    "shippingConfig": {
+      "freeShippingMinAmount": 15000,
+      "fixedShippingCost": 500,
+      "enabled": true
+    }
+  }
+}
+```
+
+### GET /api/v1/orders/admin
+Obtiene todas las órdenes (solo admin).
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Permisos requeridos**: `orders` - acción `GET`
+
+**Query Params**:
+| Parámetro |Tipo|Descripción|
+|---------|---|-------------|
+| page |number|Número de página|
+| limit |number|Cantidad por página|
+| status |string|Filtrar por estado|
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": [...órdenes],
+  "pagination": { ... }
+}
+```
+
+### PUT /api/v1/orders/:id/status
+Actualiza el estado de una orden (solo admin).
+
+**Headers**: `Authorization: Bearer <access_token>`
+**Content-Type**: `application/json`
+
+**Permisos requeridos**: `orders` - acción `PUT`
+
+**Body**:
+```json
+{
+  "status": "shipped"
+}
+```
+
+**Estados válidos**: `pending`, `processing`, `shipped`, `delivered`, `cancelled`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": { ...orden actualizada },
+  "message": "Estado de la orden actualizado"
+}
+```
+
+---
+
+## Endpoints de Configuración
+
+Gestión de configuración del e-commerce (solo admin).
+
+### GET /api/v1/config
+Obtiene la configuración actual del e-commerce.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "storeName": "Mi Tienda",
+    "storeLogo": "https://...",
+    "storeEmail": "contacto@mitienda.com",
+    "storePhone": "+5491112345678",
+    "paymentMethods": [...],
+    "shippingConfig": { ... }
+  }
+}
+```
+
+### PUT /api/v1/config
+Actualiza la configuración del e-commerce.
+
+**Headers**: `Authorization: Bearer <access_token>`
+**Content-Type**: `application/json`
+
+**Permisos requeridos**: `config` - acción `PUT`
+
+**Body**:
+```json
+{
+  "storeName": "Mi Tienda",
+  "storeEmail": "nuevo@email.com",
+  "storePhone": "+5491112345678",
+  "paymentMethods": [
+    { "id": "mercadopago", "name": "MercadoPago", "type": "mercadopago", "enabled": true },
+    { "id": "cash", "name": "Efectivo", "type": "cash", "enabled": true },
+    { "id": "transfer", "name": "Transferencia", "type": "transfer", "enabled": false }
+  ],
+  "shippingConfig": {
+    "freeShippingMinAmount": 20000,
+    "fixedShippingCost": 600,
+    "enabled": true
+  }
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": { ...configuración actualizada },
+  "message": "Configuración actualizada correctamente"
+}
+```
+
+---
+
+## MercadoPago - Configuración
+
+### Requisitos Previos
+
+1. **Cuenta de MercadoPago**: Crear cuenta en https://www.mercadopago.com.ar
+2. **Credenciales**: Obtener el Access Token desde el dashboard
+
+### Paso 1: Obtener Access Token
+
+1. Iniciar sesión en MercadoPago
+2. Ir a **Configuración** > **Credenciales** (o **Integraciones**)
+3. Copiar el **Access Token** (para producción) o el de **prueba** (para tests)
+
+### Paso 2: Configurar Variable de Entorno
+
+Agregar al archivo `.env` del backend:
+
+```env
+# MercadoPago
+# Token de producción
+MERCADO_PAGO_ACCESS_TOKEN=APP_USR-xxxxxxxx-xxxx-xxxx-xxxxxxxxxxxxxxxxxxxxxxxx
+
+# O para pruebas/sandbox:
+# MERCADO_PAGO_ACCESS_TOKEN=APP_USR-xxxxxxxx-xxxx-xxxx-xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+### Paso 3: Configurar Métodos de Pago (Admin)
+
+Llamar al endpoint de configuración con un token de admin:
+
+```bash
+curl -X PUT http://localhost:3000/api/v1/config \
+  -H "Authorization: Bearer <admin_access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "storeName": "Mi Tienda",
+    "storeEmail": "tienda@email.com",
+    "storePhone": "+5491112345678",
+    "paymentMethods": [
+      {
+        "id": "mercadopago",
+        "name": "MercadoPago",
+        "type": "mercadopago",
+        "enabled": true
+      },
+      {
+        "id": "cash",
+        "name": "Efectivo",
+        "type": "cash",
+        "enabled": true,
+        "instructions": "Pago contra entrega al recibir el pedido"
+      },
+      {
+        "id": "transfer",
+        "name": "Transferencia Bancaria",
+        "type": "transfer",
+        "enabled": true,
+        "instructions": "CBU: 0000000000000000000000 - Alias: mitienda.oficial"
+      }
+    ],
+    "shippingConfig": {
+      "freeShippingMinAmount": 15000,
+      "fixedShippingCost": 500,
+      "enabled": true
+    }
+  }'
+```
+
+### Flujo de Pago con MercadoPago
+
+1. **Usuario agrega productos al carrito**
+2. **Usuario inicia checkout**: `POST /api/v1/orders`
+3. **Backend crea la orden** y reduce stock
+4. **Frontend obtiene preferencia**: `POST /api/v1/orders/preference/:orderId`
+5. **Frontend redirige** al usuario a `initPoint` de MercadoPago
+6. **Usuario completa pago** en la página de MercadoPago
+7. **MercadoPago redirecciona**a `/checkout/success?orderId=...`
+
+### Webhook (Opcional)
+
+Para actualizar automáticamente el estado de la orden cuando se confirma el pago:
+
+1. Configurar webhook en MercadoPago dashboard: `https://tu-backend.com/api/v1/orders/webhook`
+2. El backend recibe la notificación y actualiza el estado de la orden
+
+### Estados de Orden
+
+| Estado | Descripción |
+|--------|-------------|
+| `pending` | Orden creada, esperando pago |
+| `processing` | Pago aprobado, preparando envío |
+| `shipped` | Pedido enviado |
+| `delivered` | Pedido entregado |
+| `canceled` | Orden cancelada |
+
+### Errores Comunes
+
+| Error | Causa | Solución |
+|-------|------|---------|
+| `MERCADO_PAGO_ACCESS_TOKEN no configurado` | Falta variable.env | Agregar el token al `.env` |
+| `401 Unauthorized` | Token inválido | Verificar el Access Token |
+| `pending` | Pago en proceso | El usuario debe completar el pago |
