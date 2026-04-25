@@ -1378,6 +1378,99 @@ https://tu-backend.com/api/v1/orders/webhook
 
 ---
 
+## Endpoints de Dashboard
+
+Estadísticas y datos para el panel de administración. Requiere autenticación JWT.
+
+### GET /api/v1/dashboard/stats
+Obtiene estadísticas generales del dashboard.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Permisos requeridos**: `dashboard` - acción `GET`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "ventasMes": 150000,
+    "ventasMesAnterior": 120000,
+    "pedidosPendientes": 5,
+    "pedidosMesAnterior": 8,
+    "usuariosNuevos": 12,
+    "usuariosSemana": 5,
+    "productosActivos": 85,
+    "productosStockBajo": 3
+  }
+}
+```
+
+### GET /api/v1/dashboard/sales-chart
+Obtiene datos para el gráfico de ventas de los últimos 7 días.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Permisos requeridos**: `dashboard` - acción `GET`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "labels": ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
+    "values": [15000, 22000, 18000, 25000, 30000, 45000, 35000]
+  }
+}
+```
+
+### GET /api/v1/dashboard/category-sales
+Obtiene ventas por categoría.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Permisos requeridos**: `dashboard` - acción `GET`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": [
+    { "category": "tecnologia", "total": 85000 },
+    { "category": "ropa", "total": 45000 },
+    { "category": "hogar", "total": 32000 }
+  ]
+}
+```
+
+### GET /api/v1/dashboard/orders
+Obtiene los pedidos recientes del dashboard.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Permisos requeridos**: `dashboard` - acción `GET`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "usuario": {
+        "nombre": "Juan Pérez",
+        "email": "juan@example.com"
+      },
+      "precioTotal": 25500,
+      "estado": "pending",
+      "fecha": "2024-01-15T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
 ## Endpoints de Configuración
 
 Gestión de configuración del e-commerce. GET /api/v1/config es público, GET /api/v1/config/full y PUT /api/v1/config requieren autenticación JWT y permisos de admin.

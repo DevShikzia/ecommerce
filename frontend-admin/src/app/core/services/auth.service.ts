@@ -15,15 +15,17 @@ interface User {
     _id: string;
     name: string;
     nombre?: string;
-    permissions: string[] | PermissionObj[];
+    permissions: PermissionObj[];
     description?: string;
   };
 }
 
 interface PermissionObj {
   _id: string;
-  recurso: string;
-  accion: string;
+  recurso?: string;
+  resource?: string;
+  accion?: string;
+  action?: string;
 }
 
 interface LoginResponse {
@@ -110,16 +112,14 @@ export class AuthService {
 
   private loadPermissions(): void {
     const user = this.userSignal();
-    if (user?.role?.permissions) {
-      const perms = user.role.permissions;
-      if (Array.isArray(perms) && perms.length > 0) {
-        if (typeof perms[0] === 'string') {
-          this.permissionsSignal.set(perms as string[]);
-        } else {
-          const permObjs = perms as PermissionObj[];
-          this.permissionsSignal.set(permObjs.map(p => p.recurso));
-        }
-      }
+    if (user?.role?.permissions && Array.isArray(user.role.permissions)) {
+      // permissions viene como array de objetos { recurso, accion } desde el backend
+      // Los transformamos a strings para mantener compatibilidad con el guard
+      const permStrings = user.role.permissions.map(p => {
+        if (typeof p === 'string') return p;
+        return (p as PermissionObj).recurso || (p as PermissionObj).resource || '';
+      }).filter(Boolean);
+      this.permissionsSignal.set(permStrings);
     }
   }
 
@@ -128,9 +128,25 @@ export class AuthService {
   }
 
   hasPermission(resource: string, action?: string): boolean {
+    const user = this.userSignal();
+    if (!user) return false;
+    
+    // Admin tiene todos los permisos
+    if (user.role?.name === 'admin' || user.role?.nombre === 'admin') {
+      return true;
+    }
+    
     const permissions = this.permissionsSignal();
     if (!permissions || permissions.length === 0) return false;
-    return permissions.includes(resource) || permissions.includes('*');
+    
+    // permissions es array de objetos { recurso, accion }
+    return permissions.some(p => {
+      if (typeof p === 'string') {
+        return p === resource || p === '*';
+      }
+      const permResource = (p as PermissionObj).recurso || (p as PermissionObj).resource;
+      return permResource === resource || permResource === '*';
+    });
   }
 
   hasRole(roleName: string): boolean {

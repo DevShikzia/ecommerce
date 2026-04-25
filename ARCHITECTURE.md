@@ -38,7 +38,10 @@ backend/
 │   │   ├── database.ts         # Conexión MongoDB
 │   │   └── env.ts              # Validación de variables de entorno
 │   ├── controllers/
-│   │   └── configuracion.controller.ts  # Gestión de configuración
+│   │   ├── configuracion.controller.ts  # Gestión de configuración
+│   │   ├── dashboard.controller.ts      # Estadísticas del panel admin
+│   │   ├── admin-user.controller.ts     # Gestión de usuarios admin
+│   │   └── ...
 │   ├── models/
 │   │   ├── Product.ts
 │   │   ├── User.ts
@@ -49,6 +52,8 @@ backend/
 │   │   ├── Permission.ts      # Endpoints y páginas accesibles
 │   │   └── Configuracion.ts    # Configuración editable por admin
 │   ├── routes/
+│   │   ├── dashboard.routes.ts    # Rutas de estadísticas
+│   │   └── ...
 │   ├── middleware/
 │   │   ├── auth.middleware.ts  # Verifica JWT
 │   │   ├── permisos.middleware.ts # Verifica permisos de rol
@@ -101,15 +106,45 @@ frontend-admin/
 ├── src/
 │   ├── app/
 │   │   ├── core/
+│   │   │   ├── services/
+│   │   │   │   ├── auth.service.ts
+│   │   │   │   ├── config.service.ts
+│   │   │   │   ├── dashboard.service.ts
+│   │   │   │   ├── product.service.ts
+│   │   │   │   ├── user.service.ts
+│   │   │   │   ├── order.service.ts
+│   │   │   │   └── role.service.ts
+│   │   │   ├── guards/
+│   │   │   │   ├── auth.guard.ts
+│   │   │   │   └── permissions.guard.ts
+│   │   │   └── interceptors/
+│   │   │       └── auth.interceptor.ts
 │   │   ├── features/
 │   │   │   ├── dashboard/
-│   │   │   ├── productos/
-│   │   │   ├── usuarios/
+│   │   │   │   └── dashboard.component.ts
+│   │   │   ├── products/
+│   │   │   │   ├── product-list.component.ts
+│   │   │   │   └── product-form.component.ts
+│   │   │   ├── users/
+│   │   │   │   └── user-list.component.ts
 │   │   │   ├── roles/
-│   │   │   ├── ordenes/
-│   │   │   ├── pagos/
-│   │   │   └── configuracion/
-│   └── environments/
+│   │   │   │   ├── role-list.component.ts
+│   │   │   │   └── role-form.component.ts
+│   │   │   ├── orders/
+│   │   │   │   └── order-list.component.ts
+│   │   │   ├── config/
+│   │   │   │   └── config-page.component.ts
+│   │   │   └── pagos/
+│   │   │       └── payment-list.component.ts
+│   │   ├── shared/
+│   │   │   ├── models/
+│   │   │   │   ├── user.model.ts
+│   │   │   │   ├── product.model.ts
+│   │   │   │   ├── order.model.ts
+│   │   │   │   ├── role.model.ts
+│   │   │   │   └── config.model.ts
+│   │   │   └── components/
+│   │   └── app.routes.ts
 ├── package.json
 └── angular.json
 ```

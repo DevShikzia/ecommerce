@@ -19,6 +19,7 @@ import configuracionRoutes from './routes/configuracion.routes';
 import userRoutes from './routes/user.routes';
 import adminUserRoutes from './routes/admin-user.routes';
 import paymentRoutes from './routes/payment.routes';
+import dashboardRoutes from './routes/dashboard.routes';
 
 export const createApp = async (): Promise<Application> => {
   const app = express();
@@ -42,6 +43,7 @@ export const createApp = async (): Promise<Application> => {
   app.use('/api/v1/users', userRoutes);
   app.use('/api/v1/admin/users', adminUserRoutes);
   app.use('/api/v1/payments', paymentRoutes);
+  app.use('/api/v1/dashboard', dashboardRoutes);
 
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);
