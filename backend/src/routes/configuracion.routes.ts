@@ -4,16 +4,19 @@
  */
 import { Router } from 'express';
 import {
-  getConfiguracionHandler,
-  updateConfiguracionHandler,
+  getConfig,
+  getFullConfigHandler,
+  updateConfigHandler,
 } from '../controllers/configuracion.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { checkPermission } from '../middleware/permisos.middleware';
 
 const router = Router();
 
-router.get('/', getConfiguracionHandler);
+router.get('/', getConfig);
 
-router.put('/', authMiddleware, checkPermission, updateConfiguracionHandler);
+router.get('/full', authMiddleware, checkPermission, getFullConfigHandler);
+
+router.put('/', authMiddleware, checkPermission, updateConfigHandler);
 
 export default router;

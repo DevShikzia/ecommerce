@@ -1,12 +1,13 @@
 /**
  * Configuración base de la aplicación Express
  */
-import express, { Application, Request, Response } from 'express';
+import express, { Application } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { errorMiddleware, notFoundMiddleware } from './middleware/error.middleware';
 import { logger } from './utils/logger';
 import { generatePermissionsFromRoutes } from './utils/route-scanner';
+import { initializeConfig } from './services/config.service';
 
 import roleRoutes from './routes/role.routes';
 import permissionRoutes from './routes/permission.routes';
@@ -46,4 +47,13 @@ export const createApp = async (): Promise<Application> => {
   await generatePermissionsFromRoutes(app);
 
   return app;
+};
+
+export const initializeServerConfig = async (): Promise<void> => {
+  try {
+    const config = await initializeConfig();
+    logger.info(`Configuración inicializada: ${config.nombreEcommerce}`);
+  } catch (error) {
+    logger.error('Error al inicializar configuración:', error);
+  }
 };

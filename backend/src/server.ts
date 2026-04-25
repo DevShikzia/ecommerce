@@ -1,7 +1,7 @@
 /**
  * Punto de entrada del servidor
  */
-import { createApp } from './app';
+import { createApp, initializeServerConfig } from './app';
 import { connectDatabase } from './config/database';
 import { env } from './config/env';
 import { logger } from './utils/logger';
@@ -9,6 +9,7 @@ import { logger } from './utils/logger';
 const startServer = async (): Promise<void> => {
   try {
     await connectDatabase();
+    await initializeServerConfig();
 
     const app = await createApp();
     const port = parseInt(env.PORT, 10);

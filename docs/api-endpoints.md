@@ -1380,28 +1380,71 @@ https://tu-backend.com/api/v1/orders/webhook
 
 ## Endpoints de Configuración
 
-Gestión de configuración del e-commerce (solo admin).
+Gestión de configuración del e-commerce. GET /api/v1/config es público, GET /api/v1/config/full y PUT /api/v1/config requieren autenticación JWT y permisos de admin.
 
 ### GET /api/v1/config
-Obtiene la configuración actual del e-commerce.
+Obtiene la configuración pública del e-commerce (sin datos sensibles).
 
 **Response (200 OK)**
 ```json
 {
   "success": true,
   "data": {
-    "storeName": "Mi Tienda",
-    "storeLogo": "https://...",
-    "storeEmail": "contacto@mitienda.com",
-    "storePhone": "+5491112345678",
-    "paymentMethods": [...],
-    "shippingConfig": { ... }
+    "nombreEcommerce": "Mi Tienda",
+    "logo": "https://res.cloudinary.com/.../logo.png",
+    "colores": {
+      "primary": "#000000",
+      "secondary": "#666666",
+      "background": "#FFFFFF",
+      "text": "#333333"
+    },
+    "moneda": "ARS"
   }
 }
 ```
 
+### GET /api/v1/config/full
+Obtiene la configuración completa del e-commerce (solo admin).
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Permisos requeridos**: `config` - acción `GET`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "nombreEcommerce": "Mi Tienda",
+    "logo": "https://res.cloudinary.com/.../logo.png",
+    "colores": {
+      "primary": "#000000",
+      "secondary": "#666666",
+      "background": "#FFFFFF",
+      "text": "#333333"
+    },
+    "metodosPago": [
+      { "nombre": "MercadoPago", "habilitado": true, "config": {} },
+      { "nombre": "Efectivo", "habilitado": true, "config": { "instrucciones": "Pago contra entrega" } }
+    ],
+    "reglasEnvio": {
+      "montoMinimoGratis": 15000,
+      "costoFijo": 500,
+      "habilitado": true
+    },
+    "moneda": "ARS",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+}
+```
+
+**Errores**:
+- `401`: No autenticado
+- `403`: Sin permisos
+
 ### PUT /api/v1/config
-Actualiza la configuración del e-commerce.
+Actualiza la configuración del e-commerce (solo admin).
 
 **Headers**: `Authorization: Bearer <access_token>`
 **Content-Type**: `application/json`
@@ -1411,21 +1454,31 @@ Actualiza la configuración del e-commerce.
 **Body**:
 ```json
 {
-  "storeName": "Mi Tienda",
-  "storeEmail": "nuevo@email.com",
-  "storePhone": "+5491112345678",
-  "paymentMethods": [
-    { "id": "mercadopago", "name": "MercadoPago", "type": "mercadopago", "enabled": true },
-    { "id": "cash", "name": "Efectivo", "type": "cash", "enabled": true },
-    { "id": "transfer", "name": "Transferencia", "type": "transfer", "enabled": false }
+  "nombreEcommerce": "Mi Tienda Actualizada",
+  "logo": "data:image/png;base64,...",
+  "colores": {
+    "primary": "#1a73e8",
+    "secondary": "#fbbc04",
+    "background": "#FFFFFF",
+    "text": "#333333"
+  },
+  "metodosPago": [
+    { "nombre": "MercadoPago", "habilitado": true, "config": {} },
+    { "nombre": "Efectivo", "habilitado": true, "config": { "instrucciones": "Pago contra entrega" } },
+    { "nombre": "Transferencia", "habilitado": false, "config": { "cbu": "1234567890123456789012" } }
   ],
-  "shippingConfig": {
-    "freeShippingMinAmount": 20000,
-    "fixedShippingCost": 600,
-    "enabled": true
-  }
+  "reglasEnvio": {
+    "montoMinimoGratis": 20000,
+    "costoFijo": 600,
+    "habilitado": true
+  },
+  "moneda": "ARS"
 }
 ```
+
+**Notas**:
+- Si `logo` comienza con `data:`, se sube a Cloudinary automáticamente
+- El logo anterior se reemplaza si existe
 
 **Response (200 OK)**
 ```json
@@ -1435,6 +1488,11 @@ Actualiza la configuración del e-commerce.
   "message": "Configuración actualizada correctamente"
 }
 ```
+
+**Errores**:
+- `400`: Error al subir logo a Cloudinary
+- `401`: No autenticado
+- `403`: Sin permisos
 
 ---
 

@@ -1,52 +1,62 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IPaymentMethod {
-  id: string;
-  name: string;
-  type: 'mercadopago' | 'cash' | 'transfer';
-  enabled: boolean;
-  instructions?: string;
+  nombre: string;
+  habilitado: boolean;
+  config: Record<string, unknown>;
 }
 
-export interface IShippingConfig {
-  freeShippingMinAmount: number;
-  fixedShippingCost: number;
-  enabled: boolean;
+export interface IShippingRules {
+  montoMinimoGratis: number;
+  costoFijo: number;
+  habilitado: boolean;
+}
+
+export interface IColors {
+  primary: string;
+  secondary: string;
+  background: string;
+  text: string;
 }
 
 export interface IConfiguracion {
-  storeName: string;
-  storeLogo?: string;
-  storeEmail: string;
-  storePhone: string;
-  paymentMethods: IPaymentMethod[];
-  shippingConfig: IShippingConfig;
+  nombreEcommerce: string;
+  logo: string;
+  colores: IColors;
+  metodosPago: IPaymentMethod[];
+  reglasEnvio: IShippingRules;
+  moneda: string;
 }
 
 export interface IConfiguracionDocument extends IConfiguracion, Document {}
 
 const PaymentMethodSchema = new Schema<IPaymentMethod>({
-  id: { type: String, required: true },
-  name: { type: String, required: true },
-  type: { type: String, enum: ['mercadopago', 'cash', 'transfer'], required: true },
-  enabled: { type: Boolean, default: true },
-  instructions: { type: String },
+  nombre: { type: String, required: true },
+  habilitado: { type: Boolean, default: true },
+  config: { type: Schema.Types.Mixed, default: {} },
 });
 
-const ShippingConfigSchema = new Schema<IShippingConfig>({
-  freeShippingMinAmount: { type: Number, default: 15000 },
-  fixedShippingCost: { type: Number, default: 500 },
-  enabled: { type: Boolean, default: true },
+const ShippingRulesSchema = new Schema<IShippingRules>({
+  montoMinimoGratis: { type: Number, default: 15000 },
+  costoFijo: { type: Number, default: 500 },
+  habilitado: { type: Boolean, default: true },
+});
+
+const ColorsSchema = new Schema<IColors>({
+  primary: { type: String, default: '#000000' },
+  secondary: { type: String, default: '#666666' },
+  background: { type: String, default: '#FFFFFF' },
+  text: { type: String, default: '#333333' },
 });
 
 const ConfiguracionSchema = new Schema<IConfiguracionDocument>(
   {
-    storeName: { type: String, required: true, default: 'Mi Tienda' },
-    storeLogo: { type: String },
-    storeEmail: { type: String, required: true, default: 'contacto@mitienda.com' },
-    storePhone: { type: String, default: '' },
-    paymentMethods: { type: [PaymentMethodSchema], default: [] },
-    shippingConfig: { type: ShippingConfigSchema, default: {} },
+    nombreEcommerce: { type: String, required: true, default: 'Mi Tienda' },
+    logo: { type: String, default: '' },
+    colores: { type: ColorsSchema, default: () => ({}) },
+    metodosPago: { type: [PaymentMethodSchema], default: [] },
+    reglasEnvio: { type: ShippingRulesSchema, default: () => ({}) },
+    moneda: { type: String, default: 'ARS' },
   },
   {
     timestamps: true,
@@ -64,6 +74,13 @@ export const getConfiguracion = async (): Promise<IConfiguracionDocument | null>
   return Configuracion.findOne().exec();
 };
 
+export const createConfiguracion = async (
+  data: Partial<IConfiguracion>
+): Promise<IConfiguracionDocument> => {
+  const config = new Configuracion(data);
+  return config.save();
+};
+
 export const updateConfiguracion = async (
   data: Partial<IConfiguracion>
 ): Promise<IConfiguracionDocument> => {
@@ -71,5 +88,29 @@ export const updateConfiguracion = async (
     new: true,
     upsert: true,
   });
+  return config;
+};
+
+export const getOrCreateConfiguracion = async (): Promise<IConfiguracionDocument> => {
+  let config = await Configuracion.findOne().exec();
+  if (!config) {
+    config = await createConfiguracion({
+      nombreEcommerce: 'Mi Tienda',
+      logo: '',
+      colores: {
+        primary: '#000000',
+        secondary: '#666666',
+        background: '#FFFFFF',
+        text: '#333333',
+      },
+      metodosPago: [],
+      reglasEnvio: {
+        montoMinimoGratis: 15000,
+        costoFijo: 500,
+        habilitado: true,
+      },
+      moneda: 'ARS',
+    });
+  }
   return config;
 };
