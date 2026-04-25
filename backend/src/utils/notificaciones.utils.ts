@@ -12,7 +12,7 @@ const getEmailFromConfig = async (): Promise<string> => {
   try {
     const { getConfiguracion } = await import('../models/configuracion.model');
     const configuracion = await getConfiguracion();
-    return configuracion?.storeEmail || 'noreply@mitienda.com';
+    return configuracion?.nombreEcommerce || 'noreply@mitienda.com';
   } catch {
     return 'noreply@mitienda.com';
   }
@@ -22,7 +22,7 @@ const getStoreName = async (): Promise<string> => {
   try {
     const { getConfiguracion } = await import('../models/configuracion.model');
     const configuracion = await getConfiguracion();
-    return configuracion?.storeName || 'Mi Tienda';
+    return configuracion?.nombreEcommerce || 'Mi Tienda';
   } catch {
     return 'Mi Tienda';
   }

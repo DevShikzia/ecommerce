@@ -20,6 +20,7 @@ export interface IUser {
   avatar?: string;
   googleId?: string;
   isVerified: boolean;
+  isActive: boolean;
   resetToken?: string;
   resetTokenExpiry?: Date;
   createdAt?: Date;
@@ -49,6 +50,7 @@ const UserSchema = new Schema<IUserDocument>(
     avatar: { type: String },
     googleId: { type: String, unique: true, sparse: true },
     isVerified: { type: Boolean, default: false },
+    isActive: { type: Boolean, default: true },
     resetToken: { type: String },
     resetTokenExpiry: { type: Date }
   },

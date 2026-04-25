@@ -51,6 +51,78 @@ export interface MercadoPagoPreferenceResponse {
   initPoint: string;
 }
 
+export interface OrderDocument {
+  _id: string;
+  user: string;
+  items: Array<{ product: string; productName: string; quantity: number; price: number }>;
+  shippingAddress: {
+    street: string;
+    number: string;
+    city: string;
+    province: string;
+    postalCode: string;
+  };
+  totalPrice: number;
+  status: OrderStatus;
+  paymentMethod: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export const createOrder = async (data: CreateOrderData): Promise<OrderDocument> => {
+  const order = await Order.create({
+    user: data.userId,
+    items: [],
+    shippingAddress: data.shippingAddress,
+    paymentInfo: { method: data.paymentMethod, status: 'pending' },
+    totalPrice: 0,
+    status: OrderStatus.PENDING,
+    paymentMethod: data.paymentMethod,
+  });
+  return order as unknown as OrderDocument;
+};
+
+export const getOrderById = async (orderId: string, _userId: string): Promise<OrderDocument | null> => {
+  const order = await Order.findById(orderId).populate('items.product', 'name images');
+  return order as unknown as OrderDocument | null;
+};
+
+export const getOrdersByUserId = async (
+  userId: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<{ orders: OrderDocument[]; total: number }> => {
+  const skip = (page - 1) * limit;
+  const [orders, total] = await Promise.all([
+    Order.find({ user: userId }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    Order.countDocuments({ user: userId }),
+  ]);
+  return { orders: orders as unknown as OrderDocument[], total };
+};
+
+export const updateOrderStatus = async (
+  orderId: string,
+  _adminUserId: string,
+  status: OrderStatus
+): Promise<OrderDocument | null> => {
+  const order = await Order.findByIdAndUpdate(orderId, { status }, { new: true });
+  void _adminUserId;
+  return order as unknown as OrderDocument | null;
+};
+
+export const getAllOrders = async (
+  page: number = 1,
+  limit: number = 20,
+  _status?: OrderStatus
+): Promise<{ orders: OrderDocument[]; total: number }> => {
+  const skip = (page - 1) * limit;
+  const [orders, total] = await Promise.all([
+    Order.find().sort({ createdAt: -1 }).skip(skip).limit(limit).populate('user', 'name email').lean(),
+    Order.countDocuments(),
+  ]);
+  return { orders: orders as unknown as OrderDocument[], total };
+};
+
 export const createMercadoPagoPreference = async (
   orderId: string
 ): Promise<MercadoPagoPreferenceResponse> => {

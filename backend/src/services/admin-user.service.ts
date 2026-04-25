@@ -104,7 +104,7 @@ export const getUsers = async (query: UserListQuery): Promise<UserListResult> =>
   ]);
 
   const formattedUsers = users.map((user) => {
-    const roleName = (user.role as LeanUserWithRole['role'])?.name || 'user';
+const roleName = (user.role as unknown as LeanUserWithRole['role'])?.name || 'user';
     return formatUserListItem(user as unknown as IUserDocument, roleName);
   });
 
@@ -117,7 +117,7 @@ export const getUserById = async (userId: string): Promise<UserListItem | null> 
     return null;
   }
 
-  const roleName = (user.role as LeanUserWithRole['role'])?.name || 'user';
+  const roleName = (user.role as unknown as { name?: string })?.name || 'user';
   return formatUserListItem(user, roleName);
 };
 
@@ -168,7 +168,7 @@ export const updateUser = async (
 
   await user.save();
 
-  const roleName = (user.role as LeanUserWithRole['role'])?.name || 'user';
+  const roleName = (user.role as unknown as { name?: string })?.name || 'user';
   return formatUserListItem(user, roleName);
 };
 

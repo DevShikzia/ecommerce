@@ -61,7 +61,7 @@ export const getProfile = async (userId: string): Promise<UserProfile> => {
     throw new Error('Usuario no encontrado');
   }
 
-  const roleName = (user.role as IRoleDocument)?.name || 'user';
+  const roleName = (user.role as unknown as IRoleDocument)?.name || 'user';
   return getPublicUserProfile(user, roleName);
 };
 
@@ -100,7 +100,7 @@ export const updateProfile = async (
 
   await user.save();
 
-  const roleName = (user.role as IRoleDocument)?.name || 'user';
+  const roleName = (user.role as unknown as IRoleDocument)?.name || 'user';
   return getPublicUserProfile(user, roleName);
 };
 

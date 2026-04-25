@@ -184,7 +184,7 @@ export const login = async (data: LoginData): Promise<AuthResult> => {
     throw new Error('Credenciales inválidas');
   }
 
-  const roleName = (user.role as IRoleDocument)?.name || 'user';
+  const roleName = (user.role as unknown as IRoleDocument)?.name || 'user';
 
   const payload: TokenPayload = {
     userId: user._id.toString(),
@@ -351,7 +351,7 @@ export const refreshAccessToken = async (
     throw new Error('Usuario no encontrado');
   }
 
-  const roleName = (user.role as IRoleDocument)?.name || 'user';
+  const roleName = (user.role as unknown as IRoleDocument)?.name || 'user';
 
   const newAccessToken = require('jsonwebtoken').sign(
     {

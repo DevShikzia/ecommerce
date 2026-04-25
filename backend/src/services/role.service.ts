@@ -22,16 +22,16 @@ export interface UpdateRoleDto {
 class RoleService {
   async create(createRoleDto: CreateRoleDto): Promise<IRoleDocument> {
     try {
-      const roleData = {
+      const roleData: { name: string; description?: string; permissions?: mongoose.Types.ObjectId[] } = {
         name: createRoleDto.name,
-        description: createRoleDto.description
+        description: createRoleDto.description,
       };
 
       if (createRoleDto.permissions?.length) {
         const permissions = await Permission.find({
           _id: { $in: createRoleDto.permissions }
         });
-        (roleData as { permissions: mongoose.Types.ObjectId[] }).permissions = permissions.map(p => p._id);
+        roleData.permissions = permissions.map(p => p._id);
       }
 
       const role = await Role.create(roleData);

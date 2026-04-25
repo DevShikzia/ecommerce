@@ -13,8 +13,8 @@ interface RoleResponse {
   name: string;
   permissions: unknown[];
   description?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 interface RoleListResponse {
@@ -22,8 +22,8 @@ interface RoleListResponse {
   name: string;
   permissions: unknown[];
   description?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export class RoleController {

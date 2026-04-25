@@ -53,7 +53,7 @@ export const authMiddleware = async (
       return;
     }
 
-    const roleName = (user.role as IRoleDocument)?.name || decoded.role;
+    const roleName = (user.role as unknown as IRoleDocument)?.name || decoded.role;
 
     req.user = {
       id: user._id.toString(),
