@@ -1,0 +1,30 @@
+# Dependencias
+backend/node_modules/
+frontend-cliente/node_modules/
+frontend-admin/node_modules/
+
+# Variables de entorno
+backend/.env
+frontend-cliente/.env
+frontend-admin/.env
+
+# Logs
+backend/logs/
+*.log
+npm-debug.log*
+
+# Compilados / Dist
+backend/dist/
+frontend-cliente/dist/
+frontend-admin/dist/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Carpeta de prompts (no se sube al repo)
+prompts/
+
+# IDEs
+.vscode/
+.idea/
