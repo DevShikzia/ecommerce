@@ -1,9 +1,6 @@
-/**
- * Servicio de productos
- * Maneja la lógica de negocio CRUD, búsqueda con Atlas Search e integración con Cloudinary
- */
+import mongoose from 'mongoose';
 import { v2 as cloudinary } from 'cloudinary';
-import { Product, IProduct, IProductDocument } from '../models/product.model';
+import { Product, IProduct, IProductDocument, IRating } from '../models/product.model';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 
@@ -284,10 +281,11 @@ export const userHasRatedProduct = async (
   ).lean();
 
   if (product && product.ratings && product.ratings.length > 0) {
+    const firstRating = product.ratings[0];
     return {
       hasRated: true,
-      ratingId: (product.ratings[0] as IRating)._id?.toString(),
-      existingRating: (product.ratings[0] as IRating).rating
+      ratingId: (firstRating as unknown as { _id?: mongoose.Types.ObjectId })._id?.toString(),
+      existingRating: firstRating.rating
     };
   }
   return { hasRated: false };
@@ -384,7 +382,7 @@ export const getFacets = async (): Promise<{
     { tags: 1 }
   ).lean();
 
-  productsWithTags.forEach((p: IProductDocument) => {
+  productsWithTags.forEach((p) => {
     if (p.tags) {
       p.tags.forEach((tag: string) => {
         tagCounts[tag] = (tagCounts[tag] || 0) + 1;
