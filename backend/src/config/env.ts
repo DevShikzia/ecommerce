@@ -16,6 +16,7 @@ interface EnvConfig {
   CLOUDINARY_API_SECRET: string;
   RESEND_API_KEY: string;
   FRONTEND_URL: string;
+  API_URL: string;
   MERCADO_PAGO_ACCESS_TOKEN: string;
 }
 
@@ -46,5 +47,6 @@ export const env: EnvConfig = {
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET!,
   RESEND_API_KEY: process.env.RESEND_API_KEY!,
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:4200',
+  API_URL: process.env.API_URL || 'http://localhost:3001',
   MERCADO_PAGO_ACCESS_TOKEN: process.env.MERCADO_PAGO_ACCESS_TOKEN || '',
 };

@@ -2,15 +2,18 @@
  * Servicio de pagos
  * Maneja la lógica de negocio para pagos con MercadoPago, efectivo y transferencia
  */
-import mercadopago from 'mercadopago';
+import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import { Order, OrderStatus } from '../models/order.model';
 import { getConfiguracion, IConfiguracionDocument } from '../models/configuracion.model';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 
-mercadopago.configure({
-  access_token: env.MERCADO_PAGO_ACCESS_TOKEN,
+const client = new MercadoPagoConfig({
+  accessToken: env.MERCADO_PAGO_ACCESS_TOKEN,
 });
+
+const preferenceClient = new Preference(client);
+const paymentClient = new Payment(client);
 
 export interface PreferenceResponse {
   preferenceId: string;
@@ -72,7 +75,8 @@ export const createPreference = async (
     throw new Error('No autorizado para acceder a esta orden');
   }
 
-  const preferenceItems = order.items.map((item: any) => ({
+  const preferenceItems = order.items.map((item: any, index: number) => ({
+    id: String(item._id || item.product?._id || index),
     title: item.productName,
     quantity: item.quantity,
     unit_price: item.price,
@@ -86,6 +90,7 @@ export const createPreference = async (
   const shippingCost = order.totalPrice - itemsTotal;
   if (shippingCost > 0) {
     preferenceItems.push({
+      id: 'shipping-cost',
       title: 'Costo de envío',
       quantity: 1,
       unit_price: shippingCost,
@@ -93,26 +98,28 @@ export const createPreference = async (
     });
   }
 
-  const preference = await mercadopago.preferences.create({
-    items: preferenceItems,
-    external_reference: orderId,
-    notification_url: `${env.API_URL}/api/v1/payments/webhook/mercadopago`,
-    back_urls: {
-      success: `${env.FRONTEND_URL}/checkout/success?orderId=${orderId}`,
-      failure: `${env.FRONTEND_URL}/checkout/failure?orderId=${orderId}`,
-      pending: `${env.FRONTEND_URL}/checkout/pending?orderId=${orderId}`,
+  const preference = await preferenceClient.create({
+    body: {
+      items: preferenceItems,
+      external_reference: orderId,
+      notification_url: `${env.API_URL}/api/v1/payments/webhook/mercadopago`,
+      back_urls: {
+        success: `${env.FRONTEND_URL}/checkout/success?orderId=${orderId}`,
+        failure: `${env.FRONTEND_URL}/checkout/failure?orderId=${orderId}`,
+        pending: `${env.FRONTEND_URL}/checkout/pending?orderId=${orderId}`,
+      },
     },
   });
 
   await Order.findByIdAndUpdate(orderId, {
-    'paymentInfo.details': { preferenceId: preference.body.id },
+    'paymentInfo.details': { preferenceId: preference.id },
   });
 
   logger.info(`Preferencia de pago MercadoPago creada para orden ${orderId}`);
 
   return {
-    preferenceId: preference.body.id,
-    initPoint: preference.body.init_point || '',
+    preferenceId: preference.id || '',
+    initPoint: preference.init_point || '',
   };
 };
 
@@ -292,15 +299,14 @@ export const handleMercadoPagoWebhook = async (
   paymentId: string
 ): Promise<void> => {
   try {
-    const payment = await mercadopago.payment.findById(Number(paymentId));
-    if (!payment || !payment.body) {
+    const payment = await paymentClient.get({ id: Number(paymentId) });
+    if (!payment) {
       logger.error(`Pago MercadoPago ${paymentId} no encontrado`);
       return;
     }
 
-    const paymentData = payment.body;
-    const orderId = paymentData.external_reference;
-    const status = paymentData.status;
+    const orderId = payment.external_reference;
+    const status = payment.status;
 
     if (!orderId) {
       logger.error('No se encontró external_reference en el pago');
