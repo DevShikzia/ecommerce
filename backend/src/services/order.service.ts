@@ -2,10 +2,9 @@
  * Servicio de órdenes
  * Maneja la lógica de negocio para órdenes y pagos con MercadoPago
  */
-import { Order, IOrderDocument, IOrder, OrderStatus } from '../models/order.model';
-import { Cart, ICartDocument } from '../models/cart.model';
-import { Product, IProductDocument } from '../models/product.model';
-import { getConfiguracion, IShippingConfig } from '../models/configuracion.model';
+import { Order, OrderStatus } from '../models/order.model';
+import { Product } from '../models/product.model';
+import { getConfiguracion, IShippingRules } from '../models/configuracion.model';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 
@@ -19,7 +18,7 @@ const mercadopagoFetch = async (endpoint: string, body?: unknown): Promise<unkno
       Authorization: `Bearer ${env.MERCADO_PAGO_ACCESS_TOKEN}`,
     },
     body: body ? JSON.stringify(body) : undefined,
-  });
+  } as RequestInit);
 
   if (!response.ok) {
     throw new Error(`MercadoPago API error: ${response.status}`);
@@ -48,7 +47,7 @@ export interface MercadoPagoPreferenceResponse {
   initPoint: string;
 }
 
-const reduceStock = async (items: { product: string; quantity: number }[]): Promise<void> => {
+const _reduceStock = async (items: { product: string; quantity: number }[]): Promise<void> => {
   for (const item of items) {
     await Product.findByIdAndUpdate(item.product, {
       $inc: { stock: -item.quantity },
@@ -56,154 +55,19 @@ const reduceStock = async (items: { product: string; quantity: number }[]): Prom
   }
 };
 
-const calculateShippingCost = (
+const _calculateShippingCost = (
   totalPrice: number,
-  shippingConfig: IShippingConfig
+  shippingConfig: IShippingRules
 ): number => {
-  if (!shippingConfig.enabled) {
+  if (!shippingConfig.habilitado) {
     return 0;
   }
 
-  if (totalPrice >= shippingConfig.freeShippingMinAmount) {
+  if (totalPrice >= shippingConfig.montoMinimoGratis) {
     return 0;
   }
 
-  return shippingConfig.fixedShippingCost;
-};
-
-const calculateOrderTotals = async (
-  cart: ICartDocument,
-  paymentMethodType: 'mercadopago' | 'cash' | 'transfer'
-): Promise<{ subtotal: number; shippingCost: number; total: number }> => {
-  const configuracion = await getConfiguracion();
-  const shippingConfig = configuracion?.shippingConfig || {
-    freeShippingMinAmount: 15000,
-    fixedShippingCost: 500,
-    enabled: true,
-  };
-
-  const subtotal = cart.totalPrice;
-  const shippingCost = calculateShippingCost(subtotal, shippingConfig);
-  const total = subtotal + shippingCost;
-
-  return { subtotal, shippingCost, total };
-};
-
-export const createOrder = async (
-  data: CreateOrderData
-): Promise<IOrderDocument> => {
-  const { userId, shippingAddress, paymentMethod, paymentMethodType } = data;
-
-  const cart = await Cart.findOne({ user: userId }).populate('items.product', 'name price stock');
-  if (!cart || cart.items.length === 0) {
-    throw new Error('El carrito está vacío');
-  }
-
-  const { subtotal, shippingCost, total } = await calculateOrderTotals(cart, paymentMethodType);
-
-  const orderItems = cart.items.map((item) => ({
-    product: (item.product as unknown as IProductDocument)._id,
-    productName: item.productName,
-    quantity: item.quantity,
-    price: item.price,
-  }));
-
-  const order = await Order.create({
-    user: userId,
-    items: orderItems,
-    shippingAddress,
-    paymentInfo: {
-      method: paymentMethod,
-      status: 'pending',
-    },
-    totalPrice: total,
-    status: OrderStatus.PENDING,
-    paymentMethod,
-  });
-
-  await reduceStock(
-    orderItems.map((item) => ({
-      product: item.product.toString(),
-      quantity: item.quantity,
-    }))
-  );
-
-  await Cart.updateOne({ user: userId }, { $set: { items: [], totalPrice: 0 } });
-
-  logger.info(`Orden ${order._id} creada para el usuario ${userId}`);
-
-  return order;
-};
-
-export const getOrderById = async (
-  orderId: string,
-  userId: string
-): Promise<IOrderDocument | null> => {
-  return Order.findOne({ _id: orderId, user: userId }).populate('items.product', 'name images');
-};
-
-export const getOrdersByUserId = async (
-  userId: string,
-  page: number = 1,
-  limit: number = 20
-): Promise<{ orders: IOrderDocument[]; total: number }> => {
-  const skip = (page - 1) * limit;
-
-  const [orders, total] = await Promise.all([
-    Order.find({ user: userId })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .populate('items.product', 'name images')
-      .lean() as unknown as IOrderDocument[],
-    Order.countDocuments({ user: userId }),
-  ]);
-
-  return { orders, total };
-};
-
-export const updateOrderStatus = async (
-  orderId: string,
-  adminUserId: string,
-  status: OrderStatus
-): Promise<IOrderDocument | null> => {
-  const order = await Order.findByIdAndUpdate(
-    orderId,
-    { status },
-    { new: true }
-  );
-
-  if (order) {
-    logger.info(`Orden ${orderId} actualizada a estado ${status} por admin ${adminUserId}`);
-  }
-
-  return order;
-};
-
-export const getAllOrders = async (
-  page: number = 1,
-  limit: number = 20,
-  status?: OrderStatus
-): Promise<{ orders: IOrderDocument[]; total: number }> => {
-  const skip = (page - 1) * limit;
-  const filter: Record<string, unknown> = {};
-
-  if (status) {
-    filter.status = status;
-  }
-
-  const [orders, total] = await Promise.all([
-    Order.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .populate('user', 'name email')
-      .populate('items.product', 'name images')
-      .lean() as unknown as IOrderDocument[],
-    Order.countDocuments(filter),
-  ]);
-
-  return { orders, total };
+  return shippingConfig.costoFijo;
 };
 
 export const createMercadoPagoPreference = async (
@@ -213,9 +77,6 @@ export const createMercadoPagoPreference = async (
   if (!order) {
     throw new Error('Orden no encontrada');
   }
-
-  const configuracion = await getConfiguracion();
-  const storeName = configuracion?.storeName || 'Mi Tienda';
 
   const preferenceItems = order.items.map((item) => ({
     title: item.productName,
@@ -266,10 +127,20 @@ export const getPaymentMethods = async (): Promise<{
   const configuracion = await getConfiguracion();
 
   return {
-    paymentMethods: (configuracion?.paymentMethods || []).filter(
-      (pm) => pm.enabled
-    ),
-    shippingConfig: configuracion?.shippingConfig || {
+    paymentMethods: (configuracion?.metodosPago || []).filter(
+      (pm) => pm.habilitado
+    ).map((pm) => ({
+      id: pm.nombre.toLowerCase().replace(/\s+/g, ''),
+      name: pm.nombre,
+      type: pm.nombre.toLowerCase().replace(/\s+/g, ''),
+      enabled: pm.habilitado,
+      instructions: pm.config?.instrucciones as string | undefined,
+    })),
+    shippingConfig: configuracion?.reglasEnvio ? {
+      freeShippingMinAmount: configuracion.reglasEnvio.montoMinimoGratis,
+      fixedShippingCost: configuracion.reglasEnvio.costoFijo,
+      enabled: configuracion.reglasEnvio.habilitado,
+    } : {
       freeShippingMinAmount: 15000,
       fixedShippingCost: 500,
       enabled: true,

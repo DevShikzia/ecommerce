@@ -10,9 +10,8 @@ import {
   verifyEmailHandler,
   forgotPasswordHandler,
   resetPasswordHandler,
-  refreshToken,
+  refreshTokenHandler,
   logout,
-  getCurrentUser,
 } from '../controllers/auth.controller';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth.middleware';
 
@@ -30,7 +29,7 @@ router.post('/forgot-password', forgotPasswordHandler);
 
 router.post('/reset-password', resetPasswordHandler);
 
-router.post('/refresh-token', refreshToken);
+router.post('/refresh-token', refreshTokenHandler);
 
 router.post('/logout', logout);
 

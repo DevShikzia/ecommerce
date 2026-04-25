@@ -2,8 +2,9 @@
  * Servicio de administración de usuarios
  * Maneja la lógica de negocio para gestión de usuarios por administradores
  */
+import mongoose from 'mongoose';
 import { User, IUserDocument, IAddress } from '../models/user.model';
-import { Role, IRoleDocument } from '../models/role.model';
+import { Role } from '../models/role.model';
 import { logger } from '../utils/logger';
 
 export interface AdminUserUpdateData {
@@ -29,6 +30,16 @@ export interface UserListResult {
   total: number;
   page: number;
   limit: number;
+}
+
+interface LeanUserWithRole {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  email: string;
+  role?: { name: string };
+  isVerified: boolean;
+  isActive: boolean;
+  createdAt: Date;
 }
 
 export interface UserListItem {
@@ -92,9 +103,9 @@ export const getUsers = async (query: UserListQuery): Promise<UserListResult> =>
     User.countDocuments(filter),
   ]);
 
-  const formattedUsers = users.map((user: any) => {
-    const roleName = user.role?.name || 'user';
-    return formatUserListItem(user as IUserDocument, roleName);
+  const formattedUsers = users.map((user) => {
+    const roleName = (user.role as LeanUserWithRole['role'])?.name || 'user';
+    return formatUserListItem(user as unknown as IUserDocument, roleName);
   });
 
   return { users: formattedUsers, total, page, limit };
@@ -106,7 +117,7 @@ export const getUserById = async (userId: string): Promise<UserListItem | null> 
     return null;
   }
 
-  const roleName = (user.role as any)?.name || 'user';
+  const roleName = (user.role as LeanUserWithRole['role'])?.name || 'user';
   return formatUserListItem(user, roleName);
 };
 
@@ -157,7 +168,7 @@ export const updateUser = async (
 
   await user.save();
 
-  const roleName = (user.role as any)?.name || 'user';
+  const roleName = (user.role as LeanUserWithRole['role'])?.name || 'user';
   return formatUserListItem(user, roleName);
 };
 

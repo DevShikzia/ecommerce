@@ -2,8 +2,9 @@
  * Servicio de carrito
  * Maneja la lógica de negocio para el carrito de compras
  */
+import mongoose from 'mongoose';
 import { Cart, ICartDocument, ICartItem } from '../models/cart.model';
-import { Product, IProductDocument } from '../models/product.model';
+import { Product } from '../models/product.model';
 import { logger } from '../utils/logger';
 
 export interface AddToCartData {
@@ -78,12 +79,12 @@ export const addToCart = async (
     cart.items[existingItemIndex].price = product.price;
     cart.items[existingItemIndex].productName = product.name;
   } else {
-    cart.items.push({
-      product: product._id as any,
-      productName: product.name,
-      quantity,
-      price: product.price,
-    });
+cart.items.push({
+        product: product._id as mongoose.Types.ObjectId,
+        productName: product.name,
+        quantity,
+        price: product.price,
+      });
   }
 
   cart.totalPrice = calculateTotalPrice(cart.items);
@@ -201,7 +202,7 @@ export const migrateLocalCartToDb = async (
       cart.items[existingItemIndex].quantity = finalQty;
     } else {
       cart.items.push({
-        product: product._id as any,
+        product: product._id as mongoose.Types.ObjectId,
         productName: product.name,
         quantity: availableQty,
         price: product.price,

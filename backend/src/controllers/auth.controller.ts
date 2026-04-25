@@ -17,9 +17,16 @@ import {
 import { ApiResponse } from '../types/api-response';
 import { logger } from '../utils/logger';
 
+interface GooglePayload {
+  sub: string;
+  email: string;
+  name: string;
+  picture?: string;
+}
+
 export const registerUser = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<unknown>>
 ): Promise<void> => {
   try {
     const { name, email, password } = req.body;
@@ -48,18 +55,18 @@ export const registerUser = async (
       },
       message: 'Usuario registrado correctamente',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en registerUser:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Error al registrar usuario',
+      message: error instanceof Error ? error.message : 'Error al registrar usuario',
     });
   }
 };
 
 export const loginUser = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<unknown>>
 ): Promise<void> => {
   try {
     const { email, password } = req.body;
@@ -88,25 +95,18 @@ export const loginUser = async (
       },
       message: 'Login exitoso',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en loginUser:', error);
     res.status(401).json({
       success: false,
-      message: error.message || 'Credenciales inválidas',
+      message: error instanceof Error ? error.message : 'Credenciales inválidas',
     });
   }
 };
 
-interface GooglePayload {
-  sub: string;
-  email: string;
-  name: string;
-  picture?: string;
-}
-
 export const googleAuth = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<unknown>>
 ): Promise<void> => {
   try {
     const { credential } = req.body;
@@ -151,18 +151,18 @@ export const googleAuth = async (
       },
       message: 'Login con Google exitoso',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en googleAuth:', error);
     res.status(401).json({
       success: false,
-      message: error.message || 'Error con login de Google',
+      message: error instanceof Error ? error.message : 'Error con login de Google',
     });
   }
 };
 
 export const verifyEmailHandler = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<unknown>>
 ): Promise<void> => {
   try {
     const { token } = req.body;
@@ -181,18 +181,18 @@ export const verifyEmailHandler = async (
       success: true,
       message: 'Email verificado correctamente',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en verifyEmailHandler:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Token de verificación inválido',
+      message: error instanceof Error ? error.message : 'Token de verificación inválido',
     });
   }
 };
 
 export const forgotPasswordHandler = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<unknown>>
 ): Promise<void> => {
   try {
     const { email } = req.body;
@@ -211,18 +211,18 @@ export const forgotPasswordHandler = async (
       success: true,
       message: 'Si el email existe, se enviará un enlace de recuperación',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en forgotPasswordHandler:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Error al procesar solicitud',
+      message: error instanceof Error ? error.message : 'Error al procesar solicitud',
     });
   }
 };
 
 export const resetPasswordHandler = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<unknown>>
 ): Promise<void> => {
   try {
     const { token, password } = req.body;
@@ -249,18 +249,18 @@ export const resetPasswordHandler = async (
       success: true,
       message: 'Contraseña actualizada correctamente',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en resetPasswordHandler:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Error al restablecer contraseña',
+      message: error instanceof Error ? error.message : 'Error al restablecer contraseña',
     });
   }
 };
 
-export const refreshToken = async (
+export const refreshTokenHandler = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<unknown>>
 ): Promise<void> => {
   try {
     const refreshTokenValue = req.cookies?.[COOKIE_NAME];
@@ -282,18 +282,18 @@ export const refreshToken = async (
       },
       message: 'Token refrescado correctamente',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en refreshToken:', error);
     res.status(401).json({
       success: false,
-      message: error.message || 'Error al refrescar token',
+      message: error instanceof Error ? error.message : 'Error al refrescar token',
     });
   }
 };
 
 export const logout = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<unknown>>
 ): Promise<void> => {
   try {
     res.clearCookie(COOKIE_NAME, { path: '/' });
@@ -302,39 +302,11 @@ export const logout = async (
       success: true,
       message: 'Logout exitoso',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en logout:', error);
     res.status(500).json({
       success: false,
       message: 'Error al cerrar sesión',
-    });
-  }
-};
-
-export const getCurrentUser = async (
-  req: Request,
-  res: Response<ApiResponse<any>>
-): Promise<void> => {
-  try {
-    const authenticatedReq = req as any;
-
-    if (!authenticatedReq.user) {
-      res.status(401).json({
-        success: false,
-        message: 'No autenticado',
-      });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      data: authenticatedReq.user,
-    });
-  } catch (error: any) {
-    logger.error('Error en getCurrentUser:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al obtener usuario',
     });
   }
 };

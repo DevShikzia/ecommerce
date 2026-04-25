@@ -5,7 +5,7 @@
 import bcrypt from 'bcryptjs';
 import { Resend } from 'resend';
 import { User, IUserDocument } from '../models/user.model';
-import { Role } from '../models/role.model';
+import { Role, IRoleDocument } from '../models/role.model';
 import { generateTokens, COOKIE_NAME, getRefreshTokenCookieOptions } from '../utils/jwt.utils';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
@@ -184,7 +184,7 @@ export const login = async (data: LoginData): Promise<AuthResult> => {
     throw new Error('Credenciales inválidas');
   }
 
-  const roleName = (user.role as any)?.name || 'user';
+  const roleName = (user.role as IRoleDocument)?.name || 'user';
 
   const payload: TokenPayload = {
     userId: user._id.toString(),
@@ -351,7 +351,7 @@ export const refreshAccessToken = async (
     throw new Error('Usuario no encontrado');
   }
 
-  const roleName = (user.role as any)?.name || 'user';
+  const roleName = (user.role as IRoleDocument)?.name || 'user';
 
   const newAccessToken = require('jsonwebtoken').sign(
     {

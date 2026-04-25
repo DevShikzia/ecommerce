@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 import { User } from '../models/user.model';
+import { IRoleDocument } from '../models/role.model';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -52,10 +53,12 @@ export const authMiddleware = async (
       return;
     }
 
+    const roleName = (user.role as IRoleDocument)?.name || decoded.role;
+
     req.user = {
       id: user._id.toString(),
       email: user.email,
-      role: (user.role as any)?.name || decoded.role,
+      role: roleName,
       name: user.name,
       avatar: user.avatar
     };
