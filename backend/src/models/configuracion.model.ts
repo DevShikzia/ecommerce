@@ -1,5 +1,28 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IDescuentos {
+  enabled: boolean;
+  rules: IDiscountRule[];
+  codes: IDiscountCode[];
+}
+
+export interface IDiscountRule {
+  type: 'percentage' | 'fixed';
+  value: number;
+  minPurchase?: number;
+  maxDiscount?: number;
+  active: boolean;
+}
+
+export interface IDiscountCode {
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  maxUses?: number;
+  usedCount: number;
+  active: boolean;
+}
+
 export interface IPaymentMethod {
   nombre: string;
   habilitado: boolean;
@@ -19,6 +42,11 @@ export interface IColors {
   text: string;
 }
 
+export interface IMercadoPagoConfig {
+  accessTokenEncrypted: string;
+  publicKeyEncrypted: string;
+}
+
 export interface IConfiguracion {
   nombreEcommerce: string;
   logo: string;
@@ -26,9 +54,39 @@ export interface IConfiguracion {
   metodosPago: IPaymentMethod[];
   reglasEnvio: IShippingRules;
   moneda: string;
+  descuentos: IDescuentos;
+  mercadoPago: IMercadoPagoConfig;
 }
 
 export interface IConfiguracionDocument extends IConfiguracion, Document {}
+
+const DiscountCodeSchema = new Schema<IDiscountCode>({
+  code: { type: String, required: true },
+  type: { type: String, enum: ['percentage', 'fixed'], required: true },
+  value: { type: Number, required: true },
+  maxUses: { type: Number },
+  usedCount: { type: Number, default: 0 },
+  active: { type: Boolean, default: true },
+});
+
+const DiscountRuleSchema = new Schema<IDiscountRule>({
+  type: { type: String, enum: ['percentage', 'fixed'], required: true },
+  value: { type: Number, required: true },
+  minPurchase: { type: Number },
+  maxDiscount: { type: Number },
+  active: { type: Boolean, default: true },
+});
+
+const DescuentosSchema = new Schema<IDescuentos>({
+  enabled: { type: Boolean, default: false },
+  rules: { type: [DiscountRuleSchema], default: [] },
+  codes: { type: [DiscountCodeSchema], default: [] },
+});
+
+const MercadoPagoConfigSchema = new Schema<IMercadoPagoConfig>({
+  accessTokenEncrypted: { type: String, default: '' },
+  publicKeyEncrypted: { type: String, default: '' },
+});
 
 const PaymentMethodSchema = new Schema<IPaymentMethod>({
   nombre: { type: String, required: true },
@@ -57,6 +115,8 @@ const ConfiguracionSchema = new Schema<IConfiguracionDocument>(
     metodosPago: { type: [PaymentMethodSchema], default: [] },
     reglasEnvio: { type: ShippingRulesSchema, default: () => ({}) },
     moneda: { type: String, default: 'ARS' },
+    descuentos: { type: DescuentosSchema, default: () => ({}) },
+    mercadoPago: { type: MercadoPagoConfigSchema, default: () => ({}) },
   },
   {
     timestamps: true,

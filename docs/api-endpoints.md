@@ -1909,3 +1909,256 @@ Elimina un usuario (soft delete, lo marca como inactivo).
 
 **Errores**:
 - `404`: Usuario no encontrado
+---
+
+## Endpoints de Pagos
+
+Gestión de pagos: MercadoPago, efectivo y transferencia. Requiere autenticación JWT (excepto webhook).
+
+### POST /api/v1/payments/mercadopago
+Crea una preferencia de pago de MercadoPago para una orden.
+
+**Headers**: Authorization: Bearer <access_token>
+**Content-Type**: pplication/json
+
+**Body**:
+`json
+{
+  "orderId": "507f1f77bcf86cd799439011"
+}
+`
+
+**Response (200 OK)**
+`json
+{
+  "success": true,
+  "data": {
+    "preferenceId": "1234567890",
+    "initPoint": "https://www.mercadopago.com.ar/checkout/preference?pref..."
+  }
+}
+`
+
+**Errores**:
+- 400: ID de orden requerido
+- 400: Orden no encontrada
+- 400: No autorizado para acceder a esta orden
+
+---
+
+### POST /api/v1/payments/cash
+Registra un pago en efectivo (contra entrega) para una orden.
+
+**Headers**: Authorization: Bearer <access_token>
+**Content-Type**: pplication/json
+
+**Body**:
+`json
+{
+  "orderId": "507f1f77bcf86cd799439011",
+  "amount": 15000
+}
+`
+
+**Response (200 OK)**
+`json
+{
+  "success": true,
+  "data": {
+    "orderId": "507f1f77bcf86cd799439011",
+    "status": "processing",
+    "paymentMethod": "cash"
+  },
+  "message": "Pago en efectivo registrado correctamente"
+}
+`
+
+**Notas**:
+- El monto mount es opcional, si no se pasa se usa el total de la orden
+- La orden pasa directamente a estado processing
+
+**Errores**:
+- 400: ID de orden requerido
+- 400: Orden no encontrada
+- 400: El monto abonado es insuficiente
+
+---
+
+### POST /api/v1/payments/transfer
+Registra un pago por transferencia bancaria para una orden.
+
+**Headers**: Authorization: Bearer <access_token>
+**Content-Type**: pplication/json
+
+**Body**:
+`json
+{
+  "orderId": "507f1f77bcf86cd799439011",
+  "transferProof": "Comprobante de transferencia #12345"
+}
+`
+
+**Response (200 OK)**
+`json
+{
+  "success": true,
+  "data": {
+    "orderId": "507f1f77bcf86cd799439011",
+    "status": "pending",
+    "paymentMethod": "transfer"
+  },
+  "message": "Pago por transferencia registrado, pendiente de confirmación"
+}
+`
+
+**Notas**:
+- La orden queda en estado pending hasta que un admin confirme la transferencia
+- El campo 	ransferProof es opcional
+
+**Errores**:
+- 400: ID de orden requerido
+- 400: Orden no encontrada
+
+---
+
+### POST /api/v1/payments/webhook/mercadopago
+Endpoint público para recibir webhooks de MercadoPago.
+
+**Nota**: NO requiere autenticación JWT. MercadoPago lo llama directamente.
+
+**Query Params**:
+| Parámetro |Tipo|Descripción|
+|---------|---|-------------|
+| topic |string|Tipo de notificación (ej: "payment")|
+| id |string|ID del pago|
+
+**MercadoPago envía**:
+`
+POST /api/v1/payments/webhook/mercadopago?topic=payment&id=1234567890
+`
+
+**Response (200 OK)**
+`json
+{
+  "success": true,
+  "message": "Webhook procesado"
+}
+`
+
+**Flujo del webhook**:
+1. Usuario completa pago en MercadoPago
+2. MercadoPago llama a este endpoint con 	opic=payment e id del pago
+3. Backend obtiene datos del pago
+4. Backend actualiza el estado de la orden según el resultado del pago
+
+**Configuración en MercadoPago**:
+En el dashboard de MercadoPago, configurar la URL de webhook:
+`
+https://tu-backend.com/api/v1/payments/webhook/mercadopago
+`
+
+---
+
+### POST /api/v1/payments/discount
+Aplica un descuento a una orden.
+
+**Headers**: Authorization: Bearer <access_token>
+**Content-Type**: pplication/json
+
+**Body**:
+`json
+{
+  "orderId": "507f1f77bcf86cd799439011",
+  "discountCode": "DESCUENTO10"
+}
+`
+
+**Response (200 OK)**
+`json
+{
+  "success": true,
+  "data": {
+    "orderId": "507f1f77bcf86cd799439011",
+    "originalTotal": 15000,
+    "discountAmount": 1500,
+    "finalTotal": 13500,
+    "discountCode": "DESCUENTO10"
+  },
+  "message": "Descuento aplicado correctamente"
+}
+`
+
+**Errores**:
+- 400: Descuentos no disponibles
+- 400: Código de descuento inválido
+- 400: Código de descuento desactivado
+- 400: Código de descuento agotado
+
+---
+
+### GET /api/v1/payments/discount
+Obtiene la configuración de descuentos (público).
+
+**Response (200 OK)**
+`json
+{
+  "success": true,
+  "data": {
+    "enabled": true,
+    "rules": [
+      { "type": "percentage", "value": 10, "minPurchase": 5000, "maxDiscount": 1000, "active": true }
+    ],
+    "codes": [
+      { "code": "DESCUENTO10", "type": "percentage", "value": 10, "maxUses": 100, "usedCount": 5, "active": true }
+    ]
+  }
+}
+`
+
+---
+
+## Configuración de Descuentos (Admin)
+
+Los descuentos se configuran en la colección Configuracion con el campo descuentos:
+
+`json
+{
+  "descuentos": {
+    "enabled": true,
+    "rules": [
+      {
+        "type": "percentage",
+        "value": 10,
+        "minPurchase": 5000,
+        "maxDiscount": 1000,
+        "active": true
+      }
+    ],
+    "codes": [
+      {
+        "code": "DESCUENTO10",
+        "type": "percentage",
+        "value": 10,
+        "maxUses": 100,
+        "usedCount": 0,
+        "active": true
+      }
+    ]
+  }
+}
+`
+
+**Campos de ules**:
+- 	ype: percentage (porcentaje) o ixed (monto fijo)
+- alue: Valor del descuento
+- minPurchase: Compra mínima para aplicar (opcional)
+- maxDiscount: Descuento máximo permitido (opcional, para porcentaje)
+- ctive: Si la regla está activa
+
+**Campos de codes**:
+- code: Código de descuento
+- 	ype: percentage o ixed
+- alue: Valor del descuento
+- maxUses: Usos máximos permitidos (opcional)
+- usedCount: Contador de usos actuales
+- ctive: Si el código está activo
