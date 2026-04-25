@@ -12,38 +12,53 @@ import {
   migrateLocalCartToDb as migrateLocalCartToDbService,
 } from '../services/cart.service';
 import { ApiResponse } from '../types/api-response';
+import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { logger } from '../utils/logger';
+
+interface CartResponse {
+  _id?: string;
+  user?: string;
+  items: Array<{
+    product: string;
+    productName: string;
+    quantity: number;
+    price: number;
+  }>;
+  totalPrice: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 export const getCart = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<CartResponse>>
 ): Promise<void> => {
   try {
-    const authenticatedReq = req as any;
-    const userId = authenticatedReq.user.id;
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user!.id;
 
     const cart = await getCartByUserId(userId);
 
     res.status(200).json({
       success: true,
-      data: cart || { items: [], totalPrice: 0 },
+      data: cart ? cart.toObject() as CartResponse : { items: [], totalPrice: 0 },
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en getCart:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Error al obtener el carrito',
+      message: error instanceof Error ? error.message : 'Error al obtener el carrito',
     });
   }
 };
 
 export const addToCart = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<CartResponse>>
 ): Promise<void> => {
   try {
-    const authenticatedReq = req as any;
-    const userId = authenticatedReq.user.id;
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user!.id;
     const { productId, quantity = 1 } = req.body;
 
     if (!productId) {
@@ -58,25 +73,25 @@ export const addToCart = async (
 
     res.status(200).json({
       success: true,
-      data: cart,
+      data: cart.toObject() as CartResponse,
       message: 'Producto agregado al carrito',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en addToCart:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Error al agregar al carrito',
+      message: error instanceof Error ? error.message : 'Error al agregar al carrito',
     });
   }
 };
 
 export const updateCartItem = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<CartResponse>>
 ): Promise<void> => {
   try {
-    const authenticatedReq = req as any;
-    const userId = authenticatedReq.user.id;
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user!.id;
     const { productId, quantity } = req.body;
 
     if (!productId || quantity === undefined) {
@@ -91,25 +106,25 @@ export const updateCartItem = async (
 
     res.status(200).json({
       success: true,
-      data: cart,
+      data: cart.toObject() as CartResponse,
       message: 'Carrito actualizado',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en updateCartItem:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Error al actualizar el carrito',
+      message: error instanceof Error ? error.message : 'Error al actualizar el carrito',
     });
   }
 };
 
 export const removeFromCart = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<CartResponse>>
 ): Promise<void> => {
   try {
-    const authenticatedReq = req as any;
-    const userId = authenticatedReq.user.id;
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user!.id;
     const { productId } = req.params;
 
     if (!productId) {
@@ -124,25 +139,25 @@ export const removeFromCart = async (
 
     res.status(200).json({
       success: true,
-      data: cart,
+      data: cart.toObject() as CartResponse,
       message: 'Producto eliminado del carrito',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en removeFromCart:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Error al eliminar del carrito',
+      message: error instanceof Error ? error.message : 'Error al eliminar del carrito',
     });
   }
 };
 
 export const clearCart = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<unknown>>
 ): Promise<void> => {
   try {
-    const authenticatedReq = req as any;
-    const userId = authenticatedReq.user.id;
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user!.id;
 
     await clearCartService(userId);
 
@@ -150,22 +165,22 @@ export const clearCart = async (
       success: true,
       message: 'Carrito vaciado',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en clearCart:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Error al vaciar el carrito',
+      message: error instanceof Error ? error.message : 'Error al vaciar el carrito',
     });
   }
 };
 
 export const migrateLocalCart = async (
   req: Request,
-  res: Response<ApiResponse<any>>
+  res: Response<ApiResponse<CartResponse>>
 ): Promise<void> => {
   try {
-    const authenticatedReq = req as any;
-    const userId = authenticatedReq.user.id;
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user!.id;
     const { localCartItems } = req.body;
 
     if (!localCartItems || !Array.isArray(localCartItems)) {
@@ -180,14 +195,14 @@ export const migrateLocalCart = async (
 
     res.status(200).json({
       success: true,
-      data: cart,
-      message: 'Carrito migrated successfully',
+      data: cart.toObject() as CartResponse,
+      message: 'Carrito migrado correctamente',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Error en migrateLocalCart:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Error al migrar el carrito',
+      message: error instanceof Error ? error.message : 'Error al migrar el carrito',
     });
   }
 };

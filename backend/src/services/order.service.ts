@@ -3,28 +3,32 @@
  * Maneja la lógica de negocio para órdenes y pagos con MercadoPago
  */
 import { Order, OrderStatus } from '../models/order.model';
-import { Product } from '../models/product.model';
-import { getConfiguracion, IShippingRules } from '../models/configuracion.model';
+import { getConfiguracion } from '../models/configuracion.model';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 
 const MERCADO_PAGO_API_URL = 'https://api.mercadopago.com';
 
-const mercadopagoFetch = async (endpoint: string, body?: unknown): Promise<unknown> => {
-  const response = await fetch(`${MERCADO_PAGO_API_URL}${endpoint}`, {
+interface MercadoPagoResponse {
+  id: string;
+  init_point?: string;
+}
+
+const mercadopagoFetch = async (endpoint: string, body?: unknown): Promise<MercadoPagoResponse> => {
+  const response = await globalThis.fetch(`${MERCADO_PAGO_API_URL}${endpoint}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${env.MERCADO_PAGO_ACCESS_TOKEN}`,
     },
     body: body ? JSON.stringify(body) : undefined,
-  } as RequestInit);
+  });
 
   if (!response.ok) {
     throw new Error(`MercadoPago API error: ${response.status}`);
   }
 
-  return response.json();
+  return response.json() as Promise<MercadoPagoResponse>;
 };
 
 export interface CreateOrderData {
@@ -46,29 +50,6 @@ export interface MercadoPagoPreferenceResponse {
   preferenceId: string;
   initPoint: string;
 }
-
-const _reduceStock = async (items: { product: string; quantity: number }[]): Promise<void> => {
-  for (const item of items) {
-    await Product.findByIdAndUpdate(item.product, {
-      $inc: { stock: -item.quantity },
-    });
-  }
-};
-
-const _calculateShippingCost = (
-  totalPrice: number,
-  shippingConfig: IShippingRules
-): number => {
-  if (!shippingConfig.habilitado) {
-    return 0;
-  }
-
-  if (totalPrice >= shippingConfig.montoMinimoGratis) {
-    return 0;
-  }
-
-  return shippingConfig.costoFijo;
-};
 
 export const createMercadoPagoPreference = async (
   orderId: string
@@ -104,7 +85,7 @@ export const createMercadoPagoPreference = async (
       failure: `${env.FRONTEND_URL}/checkout/failure?orderId=${orderId}`,
       pending: `${env.FRONTEND_URL}/checkout/pending?orderId=${orderId}`,
     },
-  }) as { id: string; init_point: string };
+  });
 
   const initPoint = response.init_point;
 

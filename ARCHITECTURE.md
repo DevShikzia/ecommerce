@@ -38,20 +38,23 @@ backend/
 │   │   ├── database.ts         # Conexión MongoDB
 │   │   └── env.ts              # Validación de variables de entorno
 │   ├── controllers/
+│   │   └── configuracion.controller.ts  # Gestión de configuración
 │   ├── models/
 │   │   ├── Product.ts
 │   │   ├── User.ts
 │   │   ├── Order.ts
 │   │   ├── Cart.ts
 │   │   ├── ProductType.ts     # Gestiona campos dinámicos por tipo
-│   │   ├── Role.ts              # Roles con permisos granulares
-│   │   └── Permission.ts          # Endpoints y páginas accesibles
+│   │   ├── Role.ts            # Roles con permisos granulares
+│   │   ├── Permission.ts      # Endpoints y páginas accesibles
+│   │   └── Configuracion.ts    # Configuración editable por admin
 │   ├── routes/
 │   ├── middleware/
 │   │   ├── auth.middleware.ts  # Verifica JWT
 │   │   ├── permisos.middleware.ts # Verifica permisos de rol
 │   │   └── error.middleware.ts
 │   ├── services/
+│   │   └── config.service.ts   # Lógica de negocio de configuración
 │   ├── seed/
 │   │   └── admin.seed.ts       # Script para crear admin inicial
 │   ├── utils/
@@ -63,7 +66,7 @@ backend/
 ├── .env
 ├── .env.example
 ├── package.json
-└── server.js
+└── server.ts
 ```
 
 ## 4. Estructura Detallada Frontend Cliente
