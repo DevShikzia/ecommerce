@@ -14,9 +14,16 @@ interface User {
   role: {
     _id: string;
     name: string;
-    permissions: string[];
+    nombre?: string;
+    permissions: string[] | PermissionObj[];
     description?: string;
   };
+}
+
+interface PermissionObj {
+  _id: string;
+  recurso: string;
+  accion: string;
 }
 
 interface LoginResponse {
@@ -104,7 +111,15 @@ export class AuthService {
   private loadPermissions(): void {
     const user = this.userSignal();
     if (user?.role?.permissions) {
-      this.permissionsSignal.set(user.role.permissions);
+      const perms = user.role.permissions;
+      if (Array.isArray(perms) && perms.length > 0) {
+        if (typeof perms[0] === 'string') {
+          this.permissionsSignal.set(perms as string[]);
+        } else {
+          const permObjs = perms as PermissionObj[];
+          this.permissionsSignal.set(permObjs.map(p => p.recurso));
+        }
+      }
     }
   }
 
@@ -120,7 +135,7 @@ export class AuthService {
 
   hasRole(roleName: string): boolean {
     const user = this.userSignal();
-    return user?.role?.name === roleName;
+    return user?.role?.name === roleName || user?.role?.nombre === roleName;
   }
 
   refreshToken(): Observable<User> {

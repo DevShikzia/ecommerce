@@ -2,11 +2,12 @@ export interface User {
   _id: string;
   nombre: string;
   email: string;
-  rol: Role;
+  rol: UserRole;
   direccion?: Address;
   telefono?: string;
   avatar?: string;
   verificado: boolean;
+  isActive?: boolean;
   createdAt: string;
 }
 
@@ -18,14 +19,14 @@ export interface Address {
   codigoPostal: string;
 }
 
-export interface Role {
+export interface UserRole {
   _id: string;
   nombre: string;
-  permisos: Permission[];
+  permisos: UserPermission[];
   descripcion?: string;
 }
 
-export interface Permission {
+export interface UserPermission {
   _id: string;
   recurso: string;
   accion: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'ver';

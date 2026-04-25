@@ -24,36 +24,68 @@ export const routes: Routes = [
     children: [
       {
         path: 'dashboard',
-        loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
+        loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
+        canActivate: [permissionsGuard],
+        data: { permission: '/api/v1/dashboard' }
       },
       {
         path: 'productos',
-        loadComponent: () => import('./features/features.components').then(m => m.ProductListComponent),
+        loadComponent: () => import('./features/products/product-list.component').then(m => m.ProductListComponent),
+        canActivate: [permissionsGuard],
+        data: { permission: '/api/v1/products' }
+      },
+      {
+        path: 'productos/nuevo',
+        loadComponent: () => import('./features/products/product-form.component').then(m => m.ProductFormComponent),
+        canActivate: [permissionsGuard],
+        data: { permission: '/api/v1/products' }
+      },
+      {
+        path: 'productos/editar/:id',
+        loadComponent: () => import('./features/products/product-form.component').then(m => m.ProductFormComponent),
+        canActivate: [permissionsGuard],
         data: { permission: '/api/v1/products' }
       },
       {
         path: 'usuarios',
-        loadComponent: () => import('./features/features.components').then(m => m.UserListComponent),
+        loadComponent: () => import('./features/users/user-list.component').then(m => m.UserListComponent),
+        canActivate: [permissionsGuard],
         data: { role: 'admin' }
       },
       {
         path: 'ordenes',
-        loadComponent: () => import('./features/features.components').then(m => m.OrderListComponent),
+        loadComponent: () => import('./features/orders/order-list.component').then(m => m.OrderListComponent),
+        canActivate: [permissionsGuard],
         data: { permission: '/api/v1/orders' }
       },
       {
         path: 'roles',
-        loadComponent: () => import('./features/features.components').then(m => m.RoleListComponent),
+        loadComponent: () => import('./features/roles/role-list.component').then(m => m.RoleListComponent),
+        canActivate: [permissionsGuard],
+        data: { role: 'admin' }
+      },
+      {
+        path: 'roles/nuevo',
+        loadComponent: () => import('./features/roles/role-form.component').then(m => m.RoleFormComponent),
+        canActivate: [permissionsGuard],
+        data: { role: 'admin' }
+      },
+      {
+        path: 'roles/editar/:id',
+        loadComponent: () => import('./features/roles/role-form.component').then(m => m.RoleFormComponent),
+        canActivate: [permissionsGuard],
         data: { role: 'admin' }
       },
       {
         path: 'configuracion',
-        loadComponent: () => import('./features/features.components').then(m => m.ConfigPageComponent),
+        loadComponent: () => import('./features/config/config-page.component').then(m => m.ConfigPageComponent),
+        canActivate: [permissionsGuard],
         data: { role: 'admin' }
       },
       {
         path: 'pagos',
-        loadComponent: () => import('./features/features.components').then(m => m.PaymentListComponent),
+        loadComponent: () => import('./features/pagos/payment-list.component').then(m => m.PaymentListComponent),
+        canActivate: [permissionsGuard],
         data: { role: 'admin' }
       }
     ]
