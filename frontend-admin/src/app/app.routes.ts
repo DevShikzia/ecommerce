@@ -87,6 +87,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/pagos/payment-list.component').then(m => m.PaymentListComponent),
         canActivate: [permissionsGuard],
         data: { role: 'admin' }
+      },
+      {
+        path: 'notificaciones',
+        loadComponent: () => import('./features/notifications/notification-list.component').then(m => m.NotificationListComponent),
+        canActivate: [permissionsGuard],
+        data: { role: 'admin' }
       }
     ]
   },

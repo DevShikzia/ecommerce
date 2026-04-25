@@ -291,6 +291,7 @@ interface OrderSummary {
 | `/roles/editar/:id` | RoleFormComponent | authGuard, permissionsGuard | role: admin |
 | `/configuracion` | ConfigPageComponent | authGuard, permissionsGuard | role: admin |
 | `/pagos` | PaymentListComponent | authGuard, permissionsGuard | role: admin |
+| `/notificaciones` | NotificationListComponent | authGuard, permissionsGuard | role: admin |
 
 ## Guards
 
@@ -423,4 +424,161 @@ interface Configuracion {
   createdAt?: string;
   updatedAt?: string;
 }
+```
+
+## Módulo Notificaciones
+
+### NotificationListComponent
+**Ubicación:** `frontend-admin/src/app/features/notifications/notification-list.component.ts`
+
+**Tipo:** Standalone Component
+
+**Descripción:** Contenedor principal del módulo de notificaciones con tabs para enviar, gestionar plantillas, historial y configuración.
+
+**Datos requeridos:**
+- `stats()`: NotificationStats - Estadísticas de envío (total, fallidos, emails, whatsapp)
+
+**Permisos requeridos:** Role `admin`
+
+**Sub-componentes:**
+- NotificationSendComponent
+- NotificationTemplatesComponent
+- NotificationHistoryComponent
+- NotificationSettingsComponent
+
+**Dependencias PrimeNG:** CardModule, TableModule, TagModule
+
+### NotificationSendComponent
+**Ubicación:** `frontend-admin/src/app/features/notifications/notification-send.component.ts`
+
+**Tipo:** Standalone Component
+
+**Descripción:** Formulario para enviar notificaciones por email o WhatsApp.
+
+**Funcionalidades:**
+- Selector de tipo (email/whatsapp)
+- Selección de destinatarios (usuarios, órdenes o personalizado)
+- Carga de plantilla
+- Vista previa del mensaje
+- Envío de notificación
+
+**Dependencias PrimeNG:** InputTextModule, InputTextareaModule, SelectModule, ButtonModule
+
+### NotificationTemplatesComponent
+**Ubicación:** `frontend-admin/src/app/features/notifications/notification-templates.component.ts`
+
+**Tipo:** Standalone Component
+
+**Descripción:** Gestión de plantillas de notificación con CRUD completo.
+
+**Funcionalidades:**
+- Lista de plantillas con filtros
+- Crear/editar plantilla (diálogo)
+- Eliminar con confirmación
+- Variables dinámicas en mensajes
+- Activar/desactivar plantillas
+
+**Dependencias PrimeNG:** DialogModule, InputTextModule, InputTextareaModule, SelectModule, CheckboxModule
+
+### NotificationHistoryComponent
+**Ubicación:** `frontend-admin/src/app/features/notifications/notification-history.component.ts`
+
+**Tipo:** Standalone Component
+
+**Descripción:** Historial de notificaciones enviadas con paginación y filtros.
+
+**Datos requeridos:**
+- `history()`: NotificationHistory[] - Lista de notificaciones
+- `filteredHistory()`: NotificationHistory[] - Notificaciones filtradas
+
+**Funcionalidades:**
+- Filtro por estado (enviado, fallido, pendiente)
+- Filtro por tipo (email, whatsapp)
+- Ver detalles de notificación
+- Reenviar notificación fallida
+- Paginación
+
+**Dependencias PrimeNG:** TableModule, DialogModule, SelectModule
+
+### NotificationSettingsComponent
+**Ubicación:** `frontend-admin/src/app/features/notifications/notification-settings.component.ts`
+
+**Tipo:** Standalone Component
+
+**Descripción:** Configuración de notificaciones automáticas y credenciales de API.
+
+**Funcionalidades:**
+- Activar/desactivar notificaciones por estado de orden
+- Configurar canales (email, whatsapp)
+- Ingresar credenciales de Resend y Meta Cloud API
+
+**Dependencias PrimeNG:** InputTextModule, InputSwitchModule, CardModule
+
+### NotificationService
+**Ubicación:** `frontend-admin/src/app/core/services/notification.service.ts`
+
+**Métodos:**
+- `loadTemplates()`: Observable<NotificationTemplate[]> - Carga plantillas
+- `createTemplate(template)`: Observable<NotificationTemplate> - Crea plantilla
+- `updateTemplate(id, template)`: Observable<NotificationTemplate> - Actualiza plantilla
+- `deleteTemplate(id)`: Observable<void> - Elimina plantilla
+- `loadHistory(page, limit)`: Observable<{ data, total }> - Carga historial
+- `sendNotification(dto)`: Observable<{ success, message }> - Envía notificación
+- `loadSettings()`: Observable<NotificationSettings> - Carga configuración
+- `updateSettings(settings)`: Observable<NotificationSettings> - Guarda configuración
+- `getStats()`: Observable<NotificationStats> - Obtiene estadísticas
+- `resendNotification(id)`: Observable<{ success, message }> - Reenvía notificación
+
+### Modelos de Notificación
+**Ubicación:** `frontend-admin/src/app/shared/models/notification.model.ts`
+
+```typescript
+interface NotificationTemplate {
+  _id: string;
+  name: string;
+  subject?: string;
+  body: string;
+  type: 'email' | 'whatsapp';
+  channel: 'resend' | 'meta';
+  variables: string[];
+  isActive: boolean;
+}
+
+interface NotificationHistory {
+  _id: string;
+  type: 'email' | 'whatsapp';
+  channel: 'resend' | 'meta';
+  recipient: string;
+  subject?: string;
+  body: string;
+  status: 'sent' | 'failed' | 'pending';
+  errorMessage?: string;
+  orderId?: string;
+  userId?: string;
+  sentAt: string;
+}
+
+interface NotificationSettings {
+  _id: string;
+  orderPending: boolean;
+  orderProcessing: boolean;
+  orderShipped: boolean;
+  orderDelivered: boolean;
+  orderCancelled: boolean;
+  emailEnabled: boolean;
+  whatsappEnabled: boolean;
+  resendApiKey?: string;
+  metaAccessToken?: string;
+  metaPhoneNumberId?: string;
+  metaWhatsAppBusinessId?: string;
+}
+
+interface NotificationStats {
+  totalSent: number;
+  totalFailed: number;
+  emailSent: number;
+  whatsappSent: number;
+  todaySent: number;
+}
+```
 ```

@@ -81,7 +81,8 @@ export class SidebarComponent {
     { label: 'Métodos de Pago', icon: 'pi-credit-card', route: '/pagos', role: 'admin' },
     { label: 'Usuarios', icon: 'pi-users', route: '/usuarios', permission: '/api/v1/users', role: 'admin' },
     { label: 'Roles y Permisos', icon: 'pi-shield', route: '/roles', role: 'admin' },
-    { label: 'Configuración', icon: 'pi-cog', route: '/configuracion', role: 'admin' }
+    { label: 'Configuración', icon: 'pi-cog', route: '/configuracion', role: 'admin' },
+    { label: 'Notificaciones', icon: 'pi-bell', route: '/notificaciones', role: 'admin' }
   ]);
 
   canShowItem(item: MenuItem): boolean {
