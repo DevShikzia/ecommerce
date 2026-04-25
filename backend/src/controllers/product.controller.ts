@@ -279,9 +279,12 @@ export const uploadProductImage = async (
       return;
     }
 
-    const product = await updateProductService(id, {
-      $push: { images: imageUrl },
-    });
+    const { Product } = await import('../models/product.model');
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { $push: { images: imageUrl } },
+      { new: true }
+    );
 
     if (!product) {
       res.status(404).json({
@@ -293,7 +296,7 @@ export const uploadProductImage = async (
 
     res.status(200).json({
       success: true,
-      data: product,
+      data: product.toObject(),
       message: 'Imagen agregada correctamente',
     });
   } catch (error: any) {
@@ -322,16 +325,21 @@ export const rateProduct = async (
       return;
     }
 
-    const product = await updateProductService(id, {
-      $push: {
-        ratings: {
-          user: authenticatedReq.user.id,
-          rating,
-          comment,
-          createdAt: new Date(),
+    const { Product } = await import('../models/product.model');
+    const product = await Product.findByIdAndUpdate(
+      id,
+      {
+        $push: {
+          ratings: {
+            user: authenticatedReq.user.id,
+            rating,
+            comment,
+            createdAt: new Date(),
+          },
         },
       },
-    });
+      { new: true }
+    );
 
     if (!product) {
       res.status(404).json({
@@ -343,7 +351,7 @@ export const rateProduct = async (
 
     res.status(200).json({
       success: true,
-      data: product,
+      data: product.toObject(),
       message: 'Rating agregado correctamente',
     });
   } catch (error: any) {

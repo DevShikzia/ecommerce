@@ -21,6 +21,4 @@ const RoleSchema = new Schema<IRoleDocument>(
   }
 );
 
-RoleSchema.index({ name: 1 });
-
 export const Role = mongoose.model<IRoleDocument>('Role', RoleSchema);

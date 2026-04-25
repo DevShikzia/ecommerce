@@ -33,6 +33,4 @@ const ProductTypeSchema = new Schema<IProductTypeDocument>(
   }
 );
 
-ProductTypeSchema.index({ name: 1 });
-
 export const ProductType = mongoose.model<IProductTypeDocument>('ProductType', ProductTypeSchema);

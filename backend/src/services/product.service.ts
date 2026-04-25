@@ -3,7 +3,7 @@
  * Maneja la lógica de negocio CRUD, búsqueda con Atlas Search e integración con Cloudinary
  */
 import { v2 as cloudinary } from 'cloudinary';
-import { Product, IProductDocument, IProduct } from '../models/product.model';
+import { Product, IProduct, IProductDocument } from '../models/product.model';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 
@@ -44,6 +44,8 @@ export interface CreateProductData {
   customFields?: Record<string, unknown>;
 }
 
+export type ProductLean = Omit<IProductDocument, never> & { _id: unknown };
+
 const getSkip = (page?: number, limit?: number): number => {
   const pageNum = page || 1;
   const limitNum = limit || 20;
@@ -52,7 +54,7 @@ const getSkip = (page?: number, limit?: number): number => {
 
 export const getProducts = async (
   query: ProductQuery
-): Promise<{ products: IProductDocument[]; total: number; page: number; limit: number }> => {
+): Promise<{ products: ProductLean[]; total: number; page: number; limit: number }> => {
   const { page = 1, limit = 20, category, sort = '-createdAt' } = query;
 
   const filter: Record<string, unknown> = { isActive: true };
@@ -66,34 +68,32 @@ export const getProducts = async (
       .skip(getSkip(page, limit))
       .limit(limit)
       .populate('productType', 'name')
-      .lean(),
+      .lean() as unknown as ProductLean[],
     Product.countDocuments(filter),
   ]);
 
   return { products, total, page, limit };
 };
 
-export const getProductById = async (
-  id: string
-): Promise<IProductDocument | null> => {
-  return Product.findOne({ _id: id, isActive: true })
+export const getProductById = async (id: string): Promise<ProductLean | null> => {
+  const result = await Product.findOne({ _id: id, isActive: true })
     .populate('productType', 'name')
     .populate('ratings.user', 'name avatar')
     .lean();
+  return result as ProductLean | null;
 };
 
-export const getProductBySlug = async (
-  slug: string
-): Promise<IProductDocument | null> => {
-  return Product.findOne({ slug: slug.toLowerCase(), isActive: true })
+export const getProductBySlug = async (slug: string): Promise<ProductLean | null> => {
+  const result = await Product.findOne({ slug: slug.toLowerCase(), isActive: true })
     .populate('productType', 'name')
     .populate('ratings.user', 'name avatar')
     .lean();
+  return result as ProductLean | null;
 };
 
 export const createProduct = async (
   data: CreateProductData
-): Promise<IProductDocument> => {
+): Promise<ProductLean> => {
   const existing = await Product.findOne({ slug: data.slug.toLowerCase() });
   if (existing) {
     throw new Error('El slug ya está en uso');
@@ -106,13 +106,13 @@ export const createProduct = async (
     images: data.images || [],
   });
 
-  return product;
+  return product as ProductLean;
 };
 
 export const updateProduct = async (
   id: string,
   updateData: Partial<IProduct>
-): Promise<IProductDocument | null> => {
+): Promise<ProductLean | null> => {
   if (updateData.slug) {
     const existing = await Product.findOne({
       slug: updateData.slug.toLowerCase(),
@@ -124,16 +124,13 @@ export const updateProduct = async (
     updateData.slug = updateData.slug.toLowerCase();
   }
 
-  const product = await Product.findByIdAndUpdate(id, updateData, { new: true })
+  const result = await Product.findByIdAndUpdate(id, updateData, { new: true })
     .populate('productType', 'name')
     .lean();
-
-  return product;
+  return result as ProductLean | null;
 };
 
-export const deleteProduct = async (
-  id: string
-): Promise<boolean> => {
+export const deleteProduct = async (id: string): Promise<boolean> => {
   const result = await Product.findByIdAndUpdate(
     id,
     { isActive: false },
@@ -145,7 +142,7 @@ export const deleteProduct = async (
 
 export const searchProducts = async (
   searchQuery: SearchQuery
-): Promise<IProductDocument[]> => {
+): Promise<ProductLean[]> => {
   const {
     query,
     category,
@@ -185,12 +182,13 @@ export const searchProducts = async (
     productsQuery = productsQuery.sort({ score: { $meta: 'textScore' } });
   }
 
-  return productsQuery.limit(limit).populate('productType', 'name').lean();
+  const results = await productsQuery.limit(limit).populate('productType', 'name').lean();
+  return results as unknown as ProductLean[];
 };
 
 export const getAutocompleteSuggestions = async (
   query: string
-): Promise<IProductDocument[]> => {
+): Promise<ProductLean[]> => {
   if (!query || query.length < 2) {
     return [];
   }
@@ -206,7 +204,7 @@ export const getAutocompleteSuggestions = async (
     .limit(10)
     .lean();
 
-  return products;
+  return products as unknown as ProductLean[];
 };
 
 export const getCategories = async (): Promise<string[]> => {
