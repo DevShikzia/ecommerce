@@ -35,27 +35,30 @@ e-commerce/
 backend/
 ├── src/
 │   ├── config/
-│   │   ├── database.js         # Conexión MongoDB
-│   │   └── env.js              # Validación de variables de entorno
+│   │   ├── database.ts         # Conexión MongoDB
+│   │   └── env.ts              # Validación de variables de entorno
 │   ├── controllers/
 │   ├── models/
-│   │   ├── Producto.js
-│   │   ├── Usuario.js
-│   │   ├── Orden.js
-│   │   ├── Carrito.js
-│   │   ├── TipoProducto.js     # Gestiona campos dinámicos por tipo
-│   │   ├── Rol.js              # Roles con permisos granulares
-│   │   └── Permiso.js          # Endpoints y páginas accesibles
+│   │   ├── Product.ts
+│   │   ├── User.ts
+│   │   ├── Order.ts
+│   │   ├── Cart.ts
+│   │   ├── ProductType.ts     # Gestiona campos dinámicos por tipo
+│   │   ├── Role.ts              # Roles con permisos granulares
+│   │   └── Permission.ts          # Endpoints y páginas accesibles
 │   ├── routes/
 │   ├── middleware/
-│   │   ├── auth.middleware.js  # Verifica JWT
-│   │   ├── permisos.middleware.js # Verifica permisos de rol
-│   │   └── error.middleware.js
+│   │   ├── auth.middleware.ts  # Verifica JWT
+│   │   ├── permisos.middleware.ts # Verifica permisos de rol
+│   │   └── error.middleware.ts
 │   ├── services/
+│   ├── seed/
+│   │   └── admin.seed.ts       # Script para crear admin inicial
 │   ├── utils/
-│   │   ├── jwt.utils.js
-│   │   └── notificaciones.utils.js
-│   └── app.js
+│   │   ├── jwt.utils.ts
+│   │   ├── route-scanner.ts    # Escaneo de rutas
+│   │   └── notificaciones.utils.ts
+│   └── app.ts
 ├── tests/
 ├── .env
 ├── .env.example

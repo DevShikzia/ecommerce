@@ -10,7 +10,7 @@ const startServer = async (): Promise<void> => {
   try {
     await connectDatabase();
 
-    const app = createApp();
+    const app = await createApp();
     const port = parseInt(env.PORT, 10);
 
     app.listen(port, () => {
