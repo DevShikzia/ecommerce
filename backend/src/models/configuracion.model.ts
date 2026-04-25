@@ -87,30 +87,36 @@ export const updateConfiguracion = async (
   const config = await Configuracion.findOneAndUpdate({}, data, {
     new: true,
     upsert: true,
-  });
+  }).exec();
+  if (!config) {
+    throw new Error('Error al actualizar configuración');
+  }
   return config;
 };
 
 export const getOrCreateConfiguracion = async (): Promise<IConfiguracionDocument> => {
-  let config = await Configuracion.findOne().exec();
-  if (!config) {
-    config = await createConfiguracion({
-      nombreEcommerce: 'Mi Tienda',
-      logo: '',
-      colores: {
-        primary: '#000000',
-        secondary: '#666666',
-        background: '#FFFFFF',
-        text: '#333333',
-      },
-      metodosPago: [],
-      reglasEnvio: {
-        montoMinimoGratis: 15000,
-        costoFijo: 500,
-        habilitado: true,
-      },
-      moneda: 'ARS',
-    });
+  const existingConfig = await Configuracion.findOne().exec();
+  if (existingConfig) {
+    return existingConfig;
   }
-  return config;
+
+  const newConfig = new Configuracion({
+    nombreEcommerce: 'Mi Tienda',
+    logo: '',
+    colores: {
+      primary: '#000000',
+      secondary: '#666666',
+      background: '#FFFFFF',
+      text: '#333333',
+    },
+    metodosPago: [],
+    reglasEnvio: {
+      montoMinimoGratis: 15000,
+      costoFijo: 500,
+      habilitado: true,
+    },
+    moneda: 'ARS',
+  });
+
+  return newConfig.save() as Promise<IConfiguracionDocument>;
 };
