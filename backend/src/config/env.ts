@@ -15,6 +15,7 @@ interface EnvConfig {
   CLOUDINARY_API_KEY: string;
   CLOUDINARY_API_SECRET: string;
   RESEND_API_KEY: string;
+  FRONTEND_URL: string;
 }
 
 const requiredVars: (keyof EnvConfig)[] = [
@@ -43,4 +44,5 @@ export const env: EnvConfig = {
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY!,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET!,
   RESEND_API_KEY: process.env.RESEND_API_KEY!,
+  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:4200',
 };

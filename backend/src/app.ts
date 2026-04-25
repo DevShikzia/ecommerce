@@ -3,17 +3,20 @@
  */
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { errorMiddleware, notFoundMiddleware } from './middleware/error.middleware';
 import { logger } from './utils/logger';
 import { generatePermissionsFromRoutes } from './utils/route-scanner';
 
 import roleRoutes from './routes/role.routes';
 import permissionRoutes from './routes/permission.routes';
+import authRoutes from './routes/auth.routes';
 
 export const createApp = async (): Promise<Application> => {
   const app = express();
 
   app.use(cors());
+  app.use(cookieParser());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
@@ -23,6 +26,7 @@ export const createApp = async (): Promise<Application> => {
 
   app.use('/api/v1/roles', roleRoutes);
   app.use('/api/v1/permissions', permissionRoutes);
+  app.use('/api/v1/auth', authRoutes);
 
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);

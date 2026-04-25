@@ -2,6 +2,259 @@
 
 Ruta base: `/api/v1`
 
+## Autenticación
+
+Todos los endpoints de autenticación son públicos (no requieren autenticación JWT), excepto `/api/v1/auth/me`.
+
+### POST /api/v1/auth/register
+Registra un nuevo usuario en el sistema.
+
+**Content-Type**: `application/json`
+
+**Body**:
+```json
+{
+  "name": "Juan Pérez",
+  "email": "juan@example.com",
+  "password": "TuPassword123"
+}
+```
+
+**Response (201 Created)**
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Juan Pérez",
+      "email": "juan@example.com",
+      "isVerified": false
+    }
+  },
+  "message": "Usuario registrado correctamente"
+}
+```
+
+**Errores**:
+- `400`: Datos inválidos o incompletos
+- `400`: El correo electrónico ya está registrado
+
+---
+
+### POST /api/v1/auth/login
+Inicia sesión con email y contraseña.
+
+**Content-Type**: `application/json`
+
+**Body**:
+```json
+{
+  "email": "juan@example.com",
+  "password": "TuPassword123"
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Juan Pérez",
+      "email": "juan@example.com",
+      "isVerified": true,
+      "role": { "_id": "...", "name": "user" }
+    }
+  },
+  "message": "Login exitoso"
+}
+```
+
+El Refresh Token se establece automáticamente en una cookie `httpOnly`.
+
+**Errores**:
+- `400`: Email o contraseña requeridos
+- `401`: Credenciales inválidas
+
+---
+
+### POST /api/v1/auth/google
+Inicia sesión con Google OAuth 2.0.
+
+**Content-Type**: `application/json`
+
+**Body**:
+```json
+{
+  "credential": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+El `credential` es el ID Token de Google obtenido del botón "Sign in with Google".
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Juan Pérez",
+      "email": "juan@example.com",
+      "isVerified": true,
+      "avatar": "https://...",
+      "role": { "_id": "...", "name": "user" }
+    }
+  },
+  "message": "Login con Google exitoso"
+}
+```
+
+**Errores**:
+- `400`: Token de Google requerido o inválido
+- `401`: Error con login de Google
+
+---
+
+### POST /api/v1/auth/verify-email
+Verifica el correo electrónico del usuario.
+
+**Content-Type**: `application/json`
+
+**Body**:
+```json
+{
+  "token": "abc123def456"
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "message": "Email verificado correctamente"
+}
+```
+
+**Errores**:
+- `400`: Token de verificación requerido o inválido/expirado
+
+---
+
+### POST /api/v1/auth/forgot-password
+Envia un email para recuperar la contraseña.
+
+**Content-Type**: `application/json`
+
+**Body**:
+```json
+{
+  "email": "juan@example.com"
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "message": "Si el email existe, se enviará un enlace de recuperación"
+}
+```
+
+**Notas**: Por seguridad, siempre retorna 200 aunque el email no exista.
+
+---
+
+### POST /api/v1/auth/reset-password
+Restablece la contraseña del usuario.
+
+**Content-Type**: `application/json`
+
+**Body**:
+```json
+{
+  "token": "abc123def456",
+  "password": "NuevaPassword123"
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "message": "Contraseña actualizada correctamente"
+}
+```
+
+**Errores**:
+- `400`: Token o contraseña requeridos
+- `400`: La contraseña debe tener al menos 6 caracteres
+- `400`: Token de recuperación inválido o expirado
+
+---
+
+### POST /api/v1/auth/refresh-token
+Refresca el Access Token usando el Refresh Token de la cookie.
+
+**Headers**: No requiere Authorization header (usa la cookie)
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  },
+  "message": "Token refrescado correctamente"
+}
+```
+
+**Errores**:
+- `401`: Refresh token no encontrado o inválido
+
+---
+
+### POST /api/v1/auth/logout
+Cierra la sesión del usuario.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "message": "Logout exitoso"
+}
+```
+
+---
+
+### GET /api/v1/auth/me
+Obtiene el usuario actualmente autenticado.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "507f1f77bcf86cd799439011",
+    "email": "juan@example.com",
+    "role": "user",
+    "name": "Juan Pérez"
+  }
+}
+```
+
+**Errores**:
+- `401`: No autenticado
+
+---
+
 ## Formato de Respuesta Estándar
 
 Todas las respuestas siguen el formato `ApiResponse<T>`:

@@ -13,6 +13,8 @@ export interface AuthenticatedRequest extends Request {
     id: string;
     email: string;
     role: string;
+    name?: string;
+    avatar?: string;
   };
 }
 
@@ -53,7 +55,9 @@ export const authMiddleware = async (
     req.user = {
       id: user._id.toString(),
       email: user.email,
-      role: (user.role as any)?.name || decoded.role
+      role: (user.role as any)?.name || decoded.role,
+      name: user.name,
+      avatar: user.avatar
     };
 
     next();
