@@ -2,9 +2,9 @@
  * Middleware de permisos
  * Verifica si el rol del usuario tiene permiso para acceder al endpoint
  */
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { Role } from '../models/role.model';
-import { Permission, PermissionAction } from '../models/permission.model';
+import { PermissionAction, IPermissionDocument } from '../models/permission.model';
 import { AuthenticatedRequest } from './auth.middleware';
 import { logger } from '../utils/logger';
 
@@ -15,6 +15,11 @@ const httpMethodToAction: Record<string, PermissionAction> = {
   DELETE: PermissionAction.DELETE,
   PATCH: PermissionAction.PUT
 };
+
+interface PopulatedPermission extends IPermissionDocument {
+  resource: string;
+  action: PermissionAction;
+}
 
 export const checkPermission = async (
   req: AuthenticatedRequest,
@@ -44,13 +49,14 @@ export const checkPermission = async (
     const method = req.method.toUpperCase();
     const action = httpMethodToAction[method];
 
-    const hasPermission = role.permissions.some((perm: any) => {
-      const permResource = perm.resource.replace(/\/:[\w]+/g, '');
+    const hasPermission = role.permissions.some((perm: unknown) => {
+      const permission = perm as PopulatedPermission;
+      const permResource = permission.resource.replace(/\/:[\w]+/g, '');
       const reqResource = path.replace(/\/:[\w]+/g, '');
-      
+
       return (
         (permResource === reqResource || permResource === path) &&
-        (perm.action === action || perm.action === PermissionAction.VIEW)
+        (permission.action === action || permission.action === PermissionAction.VIEW)
       );
     });
 
