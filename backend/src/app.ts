@@ -11,6 +11,7 @@ import { generatePermissionsFromRoutes } from './utils/route-scanner';
 import roleRoutes from './routes/role.routes';
 import permissionRoutes from './routes/permission.routes';
 import authRoutes from './routes/auth.routes';
+import productRoutes from './routes/product.routes';
 
 export const createApp = async (): Promise<Application> => {
   const app = express();
@@ -27,6 +28,7 @@ export const createApp = async (): Promise<Application> => {
   app.use('/api/v1/roles', roleRoutes);
   app.use('/api/v1/permissions', permissionRoutes);
   app.use('/api/v1/auth', authRoutes);
+  app.use('/api/v1/products', productRoutes);
 
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);

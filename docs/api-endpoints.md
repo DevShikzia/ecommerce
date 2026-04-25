@@ -607,3 +607,361 @@ IMPORTANT: Guarde estas credenciales de forma segura
 - La contraseña se hashea con bcrypt (12 rondas)
 - El script verifica si el admin ya existe (idempotente)
 - Luego de crear, eliminar las variables ADMIN del `.env` o comentarlas
+
+---
+
+## Endpoints de Productos
+
+Gestión del catálogo de productos. Algunos endpoints requieren autenticación JWT y permisos.
+
+### GET /api/v1/products
+Obtiene la lista de productos activos paginados.
+
+**Headers**: No requiere autenticación
+
+**Query Params**:
+| Parámetro |Tipo|Descripción|Default|
+|-----------|---|------------|-------|
+| page |number|Número de página|1|
+| limit |number|Cantidad por página|20|
+| category |string|Filtrar por categoría|-|
+| sort |string|Ordenar por campo|-createdAt|
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "products": [
+      {
+        "_id": "507f1f77bcf86cd799439011",
+        "name": "Laptop Pro",
+        "description": "Laptop profesional de alta gama",
+        "price": 150000,
+        "stock": 10,
+        "category": "tecnologia",
+        "tags": ["laptop", "computadora", "apple"],
+        "images": ["https://..."],
+        "slug": "laptop-pro",
+        "isActive": true,
+        "ratings": [],
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z"
+      }
+    ],
+    "total": 100,
+    "page": 1,
+    "limit": 20
+  }
+}
+```
+
+### GET /api/v1/products/search
+Búsqueda de productos con filtros.
+
+**Headers**: No requiere autenticación
+
+**Query Params**:
+| Parámetro |Tipo|Descripción|
+|-----------|---|-------------|
+| q |string|Consulta de búsqueda texto|
+| category |string|Filtrar por categoría|
+| tags |string|Etiquetas separadas por coma|
+| minPrice |number|precio mínimo|
+| maxPrice |number|precio máximo|
+| page |number|Número de página|1|
+| limit |number|Cantidad por página|20|
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Laptop Pro",
+      "price": 150000,
+      "category": "tecnologia",
+      "slug": "laptop-pro"
+    }
+  ]
+}
+```
+
+### GET /api/v1/products/autocomplete
+Sugerencias de autocompletado para búsqueda.
+
+**Headers**: No requiere autenticación
+
+**Query Params**:
+| Parámetro |Tipo|Descripción|
+|-----------|---|-------------|
+| q |string|Consulta (mínimo 2 caracteres)|
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": [
+    { "id": "507f1f77bcf86cd799439011", "name": "Laptop Pro", "slug": "laptop-pro", "category": "tecnologia" }
+  ]
+}
+```
+
+### GET /api/v1/products/categories
+Obtiene todas las categorías disponibles.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": ["tecnologia", "ropa", "hogar", "deportes"]
+}
+```
+
+### GET /api/v1/products/tags
+Obtiene todas las etiquetas disponibles.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": ["laptop", "smartphone", "ropa-deportiva"]
+}
+```
+
+### GET /api/v1/products/facets
+Obtiene facetas para filtros laterales.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "categories": [
+      { "name": "tecnologia", "count": 50 },
+      { "name": "ropa", "count": 30 }
+    ],
+    "tags": [
+      { "name": "laptop", "count": 20 },
+      { "name": "smartphone", "count": 15 }
+    ],
+    "priceRange": { "min": 1000, "max": 500000 }
+  }
+}
+```
+
+### GET /api/v1/products/:id
+Obtiene un producto por su ID.
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "507f1f77bcf86cd799439011",
+    "name": "Laptop Pro",
+    "description": "Laptop profesional",
+    "price": 150000,
+    "stock": 10,
+    "category": "tecnologia",
+    "tags": ["laptop"],
+    "images": ["https://..."],
+    "slug": "laptop-pro",
+    "isActive": true,
+    "ratings": [
+      { "user": { "name": "Usuario", "avatar": "https://..." }, "rating": 5, "comment": "Excelente", "createdAt": "2024-01-01" }
+    ]
+  }
+}
+```
+
+**Errores**: `404`: Producto no encontrado
+
+### POST /api/v1/products
+Crea un nuevo producto.
+
+**Headers**: `Authorization: Bearer <access_token>`
+**Content-Type**: `application/json`
+
+**Permisos requeridos**: `products` - acción `POST`
+
+**Body**:
+```json
+{
+  "name": "Nuevo Producto",
+  "description": "Descripción del producto",
+  "price": 10000,
+  "stock": 50,
+  "category": "categoria",
+  "tags": ["etiqueta1", "etiqueta2"],
+  "images": ["https://..."],
+  "slug": "nuevo-producto",
+  "productType": "507f1f77bcf86cd799439010",
+  "customFields": {}
+}
+```
+
+**Response (201 Created)**
+```json
+{
+  "success": true,
+  "data": { ...producto creado },
+  "message": "Producto creado correctamente"
+}
+```
+
+**Errores**: `400`: Datos inválidos o incompletos, `400`: El slug ya está en uso
+
+### PUT /api/v1/products/:id
+Actualiza un producto existente.
+
+**Headers**: `Authorization: Bearer <access_token>`
+**Content-Type**: `application/json`
+
+**Permisos requeridos**: `products` - acción `PUT`
+
+**Body**:
+```json
+{
+  "name": "Producto Actualizado",
+  "price": 12000,
+  "stock": 100
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": { ...producto actualizado },
+  "message": "Producto actualizado correctamente"
+}
+```
+
+### DELETE /api/v1/products/:id
+Elimina un producto (soft delete).
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Permisos requeridos**: `products` - acción `DELETE`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "message": "Producto eliminado correctamente"
+}
+```
+
+### POST /api/v1/products/:id/images
+Agrega una imagen a un producto.
+
+**Headers**: `Authorization: Bearer <access_token>`
+**Content-Type**: `application/json`
+
+**Permisos requeridos**: `products` - acción `POST`
+
+**Body**:
+```json
+{
+  "imageUrl": "https://res.cloudinary.com/.../image.jpg"
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": { ...producto con nueva imagen },
+  "message": "Imagen agregada correctamente"
+}
+```
+
+### POST /api/v1/products/:id/rate
+Agrega una valoración a un producto.
+
+**Headers**: `Authorization: Bearer <access_token>`
+**Content-Type**: `application/json`
+
+**Body**:
+```json
+{
+  "rating": 5,
+  "comment": "Excelente producto, muy recomendado"
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": { ...producto con nuevo rating },
+  "message": "Rating agregado correctamente"
+}
+```
+
+**Errores**: `400`: Rating requerido (1-5)
+
+---
+
+## Atlas Search - MongoDB
+
+Para utilizar la búsqueda avanzada con Atlas Search, crear el índice en MongoDB Atlas:
+
+1. Ir a Atlas Search en el cluster
+2. Crear índice para la colección `products`
+3. Usar el siguiente código JSON:
+
+```json
+{
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "name": {
+        "type": "string",
+        "analyzer": "standard",
+        "searchAnalyzer": "standard"
+      },
+      "description": {
+        "type": "string",
+        "analyzer": "standard"
+      },
+      "tags": {
+        "type": "string",
+        "analyzer": "standard"
+      },
+      "category": {
+        "type": "string",
+        "analyzer": "keyword"
+      },
+      "price": {
+        "type": "number"
+      }
+    }
+  }
+}
+```
+
+---
+
+## Cloudinary - Subida de Imágenes
+
+Para subir imágenes de productos a Cloudinary:
+
+1. Configurar credenciales en `.env`:
+```env
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+2. Usar el método `uploadImageToCloudinary` del servicio:
+```typescript
+import { uploadImageToCloudinary } from '../services/product.service';
+
+const result = await uploadImageToCloudinary('/path/to/image.jpg');
+// result: { url: 'https://...', publicId: 'ecommerce/products/...' }
+```
+
+3. La imagen se redimensiona automáticamente a 1200x1200 con optimización de calidad.
