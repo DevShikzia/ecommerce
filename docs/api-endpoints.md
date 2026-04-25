@@ -878,8 +878,8 @@ Agrega una imagen a un producto.
 }
 ```
 
-### POST /api/v1/products/:id/rate
-Agrega una valoración a un producto.
+### POST /api/v1/products/:id/ratings
+Agrega o actualiza una valoración a un producto. Solo usuarios que han comprado el producto pueden valorarlo.
 
 **Headers**: `Authorization: Bearer <access_token>`
 **Content-Type**: `application/json`
@@ -896,12 +896,15 @@ Agrega una valoración a un producto.
 ```json
 {
   "success": true,
-  "data": { ...producto con nuevo rating },
+  "data": { ...producto con rating },
   "message": "Rating agregado correctamente"
 }
 ```
 
-**Errores**: `400`: Rating requerido (1-5)
+**Errores**:
+- `400`: Rating requerido (1-5)
+- `403`: Solo usuarios que compraron el producto pueden valorarlo
+- `404`: Producto no encontrado
 
 ---
 
@@ -941,6 +944,55 @@ Para utilizar la búsqueda avanzada con Atlas Search, crear el índice en MongoD
     }
   }
 }
+```
+
+### Configuración de Autocompletado (Opcional)
+
+Para habilitar autocompletado en el campo `name`, agregar un sub-campo:
+
+```json
+{
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "name": [
+        {
+          "type": "string",
+          "analyzer": "standard",
+          "searchAnalyzer": "standard"
+        },
+        {
+          "type": "autocomplete",
+          "analyzer": "autocomplete",
+          "searchAnalyzer": "autocomplete"
+        }
+      ],
+      "description": { "type": "string" },
+      "tags": { "type": "string" },
+      "category": { "type": "string", "analyzer": "keyword" },
+      "price": { "type": "number" }
+    }
+  }
+}
+```
+
+### Uso de Atlas Search en el Código
+
+El servicio de productos usa búsqueda de texto nativo de MongoDB cuando Atlas Search no está configurado:
+
+```typescript
+// Búsqueda con Atlas Search (cuando está disponible)
+const products = await Product.aggregate([
+  {
+    $search: {
+      index: 'default',
+      text: {
+        query: searchTerm,
+        path: ['name', 'description', 'tags']
+      }
+    }
+  }
+]);
 ```
 
 ---

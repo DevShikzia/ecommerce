@@ -10,6 +10,9 @@ import {
   updateProduct as updateProductService,
   deleteProduct as deleteProductService,
   searchProducts as searchProductsService,
+  userHasPurchasedProduct,
+  userHasRatedProduct,
+  validateCustomFields,
 } from '../services/product.service';
 import { ApiResponse } from '../types/api-response';
 import { logger } from '../utils/logger';
@@ -97,6 +100,18 @@ export const createProduct = async (
       return;
     }
 
+    if (productType) {
+      const validation = await validateCustomFields(productType, customFields);
+      if (!validation.valid) {
+        res.status(400).json({
+          success: false,
+          message: 'Error en campos personalizados',
+          errors: validation.errors,
+        });
+        return;
+      }
+    }
+
     const product = await createProductService({
       name,
       description,
@@ -131,6 +146,43 @@ export const updateProduct = async (
   try {
     const { id } = req.params;
     const updateData = req.body;
+
+    if (updateData.productType) {
+      const validation = await validateCustomFields(updateData.productType, updateData.customFields);
+      if (!validation.valid) {
+        res.status(400).json({
+          success: false,
+          message: 'Error en campos personalizados',
+          errors: validation.errors,
+        });
+        return;
+      }
+    }
+
+    const { Product } = await import('../models/product.model');
+    const existingProduct = await Product.findById(id);
+
+    if (!existingProduct) {
+      res.status(404).json({
+        success: false,
+        message: 'Producto no encontrado',
+      });
+      return;
+    }
+
+    if (updateData.images && Array.isArray(updateData.images)) {
+      const imagesToDelete = existingProduct.images.filter(
+        (img: string) => !updateData.images.includes(img)
+      );
+
+      for (const imgUrl of imagesToDelete) {
+        const publicId = imgUrl.split('/').pop()?.replace(/\.[^/.]+$/, '');
+        if (publicId) {
+          const { deleteImageFromCloudinary } = await import('../services/product.service');
+          await deleteImageFromCloudinary(`ecommerce/products/${publicId}`);
+        }
+      }
+    }
 
     const product = await updateProductService(id, updateData);
 
@@ -316,6 +368,7 @@ export const rateProduct = async (
     const { id } = req.params;
     const { rating, comment } = req.body;
     const authenticatedReq = req as any;
+    const userId = authenticatedReq.user.id;
 
     if (!rating || rating < 1 || rating > 5) {
       res.status(400).json({
@@ -326,20 +379,7 @@ export const rateProduct = async (
     }
 
     const { Product } = await import('../models/product.model');
-    const product = await Product.findByIdAndUpdate(
-      id,
-      {
-        $push: {
-          ratings: {
-            user: authenticatedReq.user.id,
-            rating,
-            comment,
-            createdAt: new Date(),
-          },
-        },
-      },
-      { new: true }
-    );
+    const product = await Product.findById(id);
 
     if (!product) {
       res.status(404).json({
@@ -349,11 +389,57 @@ export const rateProduct = async (
       return;
     }
 
-    res.status(200).json({
-      success: true,
-      data: product.toObject(),
-      message: 'Rating agregado correctamente',
-    });
+    if (!product.isActive) {
+      res.status(400).json({
+        success: false,
+        message: 'No se puede calificar un producto inactivo',
+      });
+      return;
+    }
+
+    const hasPurchased = await userHasPurchasedProduct(userId, id);
+    if (!hasPurchased) {
+      res.status(403).json({
+        success: false,
+        message: 'Solo usuarios que compraron el producto pueden valorarlo',
+      });
+      return;
+    }
+
+    const existingRating = await userHasRatedProduct(userId, id);
+
+    if (existingRating.hasRated) {
+      const ratingIndex = product.ratings.findIndex(
+        (r: any) => r.user.toString() === userId
+      );
+
+      if (ratingIndex !== -1) {
+        product.ratings[ratingIndex].rating = rating;
+        product.ratings[ratingIndex].comment = comment || product.ratings[ratingIndex].comment;
+        product.ratings[ratingIndex].createdAt = new Date();
+        await product.save();
+      }
+
+      res.status(200).json({
+        success: true,
+        data: product.toObject(),
+        message: 'Rating actualizado correctamente',
+      });
+    } else {
+      product.ratings.push({
+        user: userId as any,
+        rating,
+        comment,
+        createdAt: new Date(),
+      });
+      await product.save();
+
+      res.status(200).json({
+        success: true,
+        data: product.toObject(),
+        message: 'Rating agregado correctamente',
+      });
+    }
   } catch (error: any) {
     logger.error('Error en rateProduct:', error);
     res.status(400).json({

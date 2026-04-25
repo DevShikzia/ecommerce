@@ -261,6 +261,111 @@ export const deleteImageFromCloudinary = async (
   });
 };
 
+export const userHasPurchasedProduct = async (
+  userId: string,
+  productId: string
+): Promise<boolean> => {
+  const { Order } = await import('../models/order.model');
+  const order = await Order.findOne({
+    user: userId,
+    'items.product': productId,
+    status: { $in: ['processing', 'shipped', 'delivered'] }
+  });
+  return !!order;
+};
+
+export const userHasRatedProduct = async (
+  userId: string,
+  productId: string
+): Promise<{ hasRated: boolean; ratingId?: string; existingRating?: number }> => {
+  const product = await Product.findOne(
+    { _id: productId, 'ratings.user': userId },
+    { 'ratings.$': 1 }
+  ).lean();
+
+  if (product && product.ratings && product.ratings.length > 0) {
+    return {
+      hasRated: true,
+      ratingId: (product.ratings[0] as any)._id?.toString(),
+      existingRating: (product.ratings[0] as any).rating
+    };
+  }
+  return { hasRated: false };
+};
+
+export const validateCustomFields = async (
+  productTypeId: string | undefined,
+  customFields: Record<string, unknown> | undefined
+): Promise<{ valid: boolean; errors: string[] }> => {
+  if (!productTypeId) {
+    return { valid: true, errors: [] };
+  }
+
+  const { ProductType } = await import('../models/product-type.model');
+  const productType = await ProductType.findById(productTypeId);
+
+  if (!productType) {
+    return { valid: false, errors: ['Tipo de producto no encontrado'] };
+  }
+
+  const errors: string[] = [];
+
+  for (const field of productType.fields) {
+    const value = customFields?.[field.name];
+
+    if (field.required && (value === undefined || value === null || value === '')) {
+      errors.push(`El campo "${field.name}" es requerido`);
+      continue;
+    }
+
+    if (value !== undefined && value !== null && value !== '') {
+      switch (field.type) {
+        case 'number':
+          if (typeof value !== 'number' || isNaN(Number(value))) {
+            errors.push(`El campo "${field.name}" debe ser un número`);
+          }
+          break;
+        case 'string':
+          if (typeof value !== 'string') {
+            errors.push(`El campo "${field.name}" debe ser una cadena de texto`);
+          }
+          break;
+        case 'boolean':
+          if (typeof value !== 'boolean') {
+            errors.push(`El campo "${field.name}" debe ser un valor booleano`);
+          }
+          break;
+      }
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+};
+
+export const removeProductImage = async (
+  productId: string,
+  imageUrl: string
+): Promise<boolean> => {
+  const product = await Product.findById(productId);
+  if (!product) {
+    return false;
+  }
+
+  const imageIndex = product.images.indexOf(imageUrl);
+  if (imageIndex === -1) {
+    return false;
+  }
+
+  const publicId = imageUrl.split('/').pop()?.replace(/\.[^/.]+$/, '');
+  if (publicId) {
+    await deleteImageFromCloudinary(`ecommerce/products/${publicId}`);
+  }
+
+  product.images.splice(imageIndex, 1);
+  await product.save();
+  return true;
+};
+
 export const getFacets = async (): Promise<{
   categories: { name: string; count: number }[];
   tags: { name: string; count: number }[];

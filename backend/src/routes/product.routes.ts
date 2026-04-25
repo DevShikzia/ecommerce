@@ -44,6 +44,6 @@ router.delete('/:id', authMiddleware, checkPermission, deleteProduct);
 
 router.post('/:id/images', authMiddleware, checkPermission, uploadProductImage);
 
-router.post('/:id/rate', authMiddleware, rateProduct);
+router.post('/:id/ratings', authMiddleware, rateProduct);
 
 export default router;
