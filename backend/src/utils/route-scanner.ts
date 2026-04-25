@@ -53,7 +53,7 @@ export const scanRoutes = (app: Application): RouteInfo[] => {
 
         if (lr.handle?.stack) {
           for (const child of lr.handle.stack) {
-            processLayer(child, basePath + (lr.regexp ? lr.regexp.source.replace(/\\\//g, '/').replace(/[\^\$]/g, '').replace(/\(\?:.*?\)/g, '').replace(/\|/g, '/') : ''));
+            processLayer(child, basePath + (lr.regexp ? lr.regexp.source.replace(/\\\//g, '/').replace(/[\^$]/g, '').replace(/\(\?:.*?\)/g, '').replace(/\|/g, '/') : ''));
           }
         }
       };
