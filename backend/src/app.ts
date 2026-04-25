@@ -15,6 +15,8 @@ import productRoutes from './routes/product.routes';
 import cartRoutes from './routes/cart.routes';
 import orderRoutes from './routes/order.routes';
 import configuracionRoutes from './routes/configuracion.routes';
+import userRoutes from './routes/user.routes';
+import adminUserRoutes from './routes/admin-user.routes';
 
 export const createApp = async (): Promise<Application> => {
   const app = express();
@@ -35,6 +37,8 @@ export const createApp = async (): Promise<Application> => {
   app.use('/api/v1/cart', cartRoutes);
   app.use('/api/v1/orders', orderRoutes);
   app.use('/api/v1/config', configuracionRoutes);
+  app.use('/api/v1/users', userRoutes);
+  app.use('/api/v1/admin/users', adminUserRoutes);
 
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);

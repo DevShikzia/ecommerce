@@ -1555,3 +1555,299 @@ Cuando el estado de una orden cambia (vía webhook o actualización manual), el 
 | `MERCADO_PAGO_ACCESS_TOKEN no configurado` | Falta variable.env | Agregar el token al `.env` |
 | `401 Unauthorized` | Token inválido | Verificar el Access Token |
 | `pending` | Pago en proceso | El usuario debe completar el pago |
+
+---
+
+## Endpoints de Perfil de Usuario
+
+Gestión del perfil del usuario autenticado. Requiere autenticación JWT.
+
+### GET /api/v1/users/profile
+Obtiene el perfil del usuario autenticado.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "507f1f77bcf86cd799439011",
+    "name": "Juan Pérez",
+    "email": "juan@example.com",
+    "role": "user",
+    "address": {
+      "street": "Av. Libertador",
+      "number": "1000",
+      "city": "Buenos Aires",
+      "province": "CABA",
+      "postalCode": "1001"
+    },
+    "phone": "+5491112345678",
+    "avatar": "https://...",
+    "isVerified": true,
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  }
+}
+```
+
+**Errores**:
+- `401`: No autenticado
+- `404`: Usuario no encontrado
+
+---
+
+### PUT /api/v1/users/profile
+Actualiza el perfil del usuario autenticado.
+
+**Headers**: `Authorization: Bearer <access_token>`
+**Content-Type**: `application/json`
+
+**Body**:
+```json
+{
+  "name": "Juan Pérez Actualizado",
+  "address": {
+    "street": "Av. Santa Fe",
+    "number": "500",
+    "city": "Buenos Aires",
+    "province": "CABA",
+    "postalCode": "2000"
+  },
+  "phone": "+5491198765432",
+  "avatar": "https://..." // O base64 data:image/png;base64,...
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "507f1f77bcf86cd799439011",
+    "name": "Juan Pérez Actualizado",
+    "email": "juan@example.com",
+    "role": "user",
+    "address": {...},
+    "phone": "+5491198765432",
+    "avatar": "https://...",
+    "isVerified": true,
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  },
+  "message": "Perfil actualizado correctamente"
+}
+```
+
+**Notas**:
+- Si `avatar` comienza con `data:`, se sube a Cloudinary automáticamente
+- El avatar anterior se elimina de Cloudinary si existe
+
+**Errores**:
+- `400`: Error al subir imagen a Cloudinary
+
+---
+
+### POST /api/v1/users/change-password
+Cambia la contraseña del usuario autenticado.
+
+**Headers**: `Authorization: Bearer <access_token>`
+**Content-Type**: `application/json`
+
+**Body**:
+```json
+{
+  "currentPassword": "PasswordActual123",
+  "newPassword": "NuevaPassword456"
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": true,
+  "message": "Contraseña cambiada correctamente"
+}
+```
+
+**Errores**:
+- `400`: Contraseña actual y nueva contraseña son requeridas
+- `400`: La nueva contraseña debe tener al menos 6 caracteres
+- `400`: La contraseña actual es incorrecta
+
+---
+
+## Endpoints de Administración de Usuarios
+
+Gestión de usuarios del sistema por administradores. Requiere autenticación JWT y permisos.
+
+### GET /api/v1/admin/users
+Obtiene la lista de usuarios con paginación y filtros.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Permisos requeridos**: `admin/users` - acción `GET`
+
+**Query Params**:
+| Parámetro |Tipo|Descripción|Default|
+|---------|---|-----------|-------|
+| page |number|Número de página|1|
+| limit |number|Cantidad por página|20|
+| role |string|Filtrar por nombre de rol|-|
+| isActive |boolean|Filtrar por estado activo|true|
+| search |string|Buscar por nombre o email|-|
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "507f1f77bcf86cd799439011",
+        "name": "Juan Pérez",
+        "email": "juan@example.com",
+        "role": "user",
+        "isVerified": true,
+        "isActive": true,
+        "createdAt": "2024-01-01T00:00:00.000Z"
+      }
+    ],
+    "total": 100,
+    "page": 1,
+    "limit": 20
+  }
+}
+```
+
+---
+
+### GET /api/v1/admin/users/roles
+Obtiene todos los roles disponibles del sistema.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": [
+    { "id": "507f1f77bcf86cd799439012", "name": "admin" },
+    { "id": "507f1f77bcf86cd799439013", "name": "user" },
+    { "id": "507f1f77bcf86cd799439014", "name": "editor" }
+  ]
+}
+```
+
+---
+
+### GET /api/v1/admin/users/:id
+Obtiene un usuario por su ID.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Permisos requeridos**: `admin/users` - acción `GET`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "507f1f77bcf86cd799439011",
+    "name": "Juan Pérez",
+    "email": "juan@example.com",
+    "role": "admin",
+    "isVerified": true,
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  }
+}
+```
+
+**Errores**:
+- `404`: Usuario no encontrado
+
+---
+
+### PUT /api/v1/admin/users/:id
+Actualiza un usuario existente.
+
+**Headers**: `Authorization: Bearer <access_token>`
+**Content-Type**: `application/json`
+
+**Permisos requeridos**: `admin/users` - acción `PUT`
+
+**Body**:
+```json
+{
+  "name": "Usuario Actualizado",
+  "email": "nuevo@email.com",
+  "phone": "+5491112345678",
+  "role": "editor",
+  "isVerified": true
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "507f1f77bcf86cd799439011",
+    "name": "Usuario Actualizado",
+    "email": "nuevo@email.com",
+    "role": "editor",
+    "isVerified": true,
+    "isActive": true,
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  },
+  "message": "Usuario actualizado correctamente"
+}
+```
+
+**Errores**:
+- `400`: El correo electrónico ya está en uso
+- `400`: Rol no encontrado
+- `404`: Usuario no encontrado
+
+---
+
+### PATCH /api/v1/admin/users/:id/status
+Activa o desactiva un usuario.
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Permisos requeridos**: `admin/users` - acción `PATCH`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": false,
+  "message": "Usuario desactivado"
+}
+```
+
+**Errores**:
+- `404`: Usuario no encontrado
+
+---
+
+### DELETE /api/v1/admin/users/:id
+Elimina un usuario (soft delete, lo marca como inactivo).
+
+**Headers**: `Authorization: Bearer <access_token>`
+
+**Permisos requeridos**: `admin/users` - acción `DELETE`
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "data": true,
+  "message": "Usuario eliminado correctamente"
+}
+```
+
+**Errores**:
+- `404`: Usuario no encontrado
