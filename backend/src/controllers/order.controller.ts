@@ -11,9 +11,14 @@ import {
   getAllOrders as getAllOrdersService,
   createMercadoPagoPreference as createMercadoPagoPreferenceService,
   getPaymentMethods as getPaymentMethodsService,
+  handleMercadoPagoWebhook as handleMercadoPagoWebhookService,
 } from '../services/order.service';
+import { sendOrderStatusNotification } from '../utils/notificaciones.utils';
+import { Order, IOrderDocument } from '../models/order.model';
 import { ApiResponse } from '../types/api-response';
 import { logger } from '../utils/logger';
+
+const MercadoPagoFetch = globalThis.fetch;
 
 export const createOrder = async (
   req: Request,
@@ -151,6 +156,27 @@ export const updateOrderStatus = async (
       return;
     }
 
+    const orderPopulated = await Order.findById(id).populate('user', 'name email') as IOrderDocument | null;
+    if (orderPopulated && orderPopulated.user) {
+      const user = orderPopulated.user as any;
+      try {
+        await sendOrderStatusNotification({
+          customerEmail: user.email,
+          customerName: user.name,
+          orderId: orderPopulated._id.toString(),
+          orderTotal: orderPopulated.totalPrice,
+          newStatus: status,
+          items: orderPopulated.items.map((item) => ({
+            productName: item.productName,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        });
+      } catch (emailError) {
+        logger.error('Error al enviar notificación de estado:', emailError);
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: order,
@@ -235,6 +261,75 @@ export const getPaymentMethodsHandler = async (
     res.status(500).json({
       success: false,
       message: error.message || 'Error al obtener los métodos de pago',
+    });
+  }
+};
+
+export const webhookMercadoPago = async (
+  req: Request,
+  res: Response<ApiResponse<any>>
+): Promise<void> => {
+  try {
+    const { topic, id } = req.query;
+
+    logger.info(`Webhook MercadoPago recibido - topic: ${topic}, id: ${id}`);
+
+    if (topic === 'payment') {
+      const paymentId = id as string;
+
+      const paymentResponse = await MercadoPagoFetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+        headers: {
+          Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
+        },
+      });
+
+      if (!paymentResponse.ok) {
+        logger.error(`Error al obtener info del pago ${paymentId}: ${paymentResponse.status}`);
+        res.status(500).json({ success: false, message: 'Error al procesar webhook' });
+        return;
+      }
+
+      const paymentData = await paymentResponse.json() as {
+        external_reference: string;
+        status: string;
+        id: number;
+      };
+
+      const orderId = paymentData.external_reference;
+      const status = paymentData.status;
+
+      if (orderId) {
+        await handleMercadoPagoWebhookService(orderId, status, paymentId as string);
+
+        const order = await Order.findById(orderId).populate('user', 'name email') as IOrderDocument | null;
+        if (order && order.user) {
+          const user = order.user as any;
+          try {
+            await sendOrderStatusNotification({
+              customerEmail: user.email,
+              customerName: user.name,
+              orderId: order._id.toString(),
+              orderTotal: order.totalPrice,
+              newStatus: status,
+              items: order.items.map((item) => ({
+                productName: item.productName,
+                quantity: item.quantity,
+                price: item.price,
+              })),
+            });
+          } catch (emailError) {
+            logger.error('Error al enviar notificación de estado:', emailError);
+          }
+        }
+      }
+    }
+
+    res.status(200).json({ success: true, message: 'Webhook procesado' });
+  } catch (error: any) {
+    logger.error('Error en webhookMercadoPago:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error al procesar webhook',
     });
   }
 };

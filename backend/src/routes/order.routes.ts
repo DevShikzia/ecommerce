@@ -11,6 +11,7 @@ import {
   getOrdersAdmin,
   createPaymentPreference,
   getPaymentMethodsHandler,
+  webhookMercadoPago,
 } from '../controllers/order.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { checkPermission } from '../middleware/permisos.middleware';
@@ -18,6 +19,8 @@ import { checkPermission } from '../middleware/permisos.middleware';
 const router = Router();
 
 router.get('/payment-methods', getPaymentMethodsHandler);
+
+router.post('/webhook', webhookMercadoPago);
 
 router.post('/preference', authMiddleware, createPaymentPreference);
 

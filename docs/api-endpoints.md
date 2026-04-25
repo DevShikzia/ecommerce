@@ -1339,6 +1339,43 @@ Actualiza el estado de una orden (solo admin).
 }
 ```
 
+### POST /api/v1/orders/webhook
+Endpoint para recibir notificaciones de MercadoPago cuando se confirma un pago.
+
+**Nota**: Este endpoint NO requiere autenticación JWT. MercadoPago lo llama directamente.
+
+**Query Params**:
+| Parámetro |Tipo|Descripción|
+|---------|---|-------------|
+| topic |string|Tipo de notificación (ej: "payment")|
+| id |string|ID del recurso notificado|
+
+**MercadoPago envía**:
+```
+POST /api/v1/orders/webhook?topic=payment&id=1234567890
+```
+
+**Response (200 OK)**
+```json
+{
+  "success": true,
+  "message": "Webhook procesado"
+}
+```
+
+**Flujo del webhook**:
+1. Usuario completa pago en MercadoPago
+2. MercadoPago llama a este endpoint con `topic=payment` e `id` del pago
+3. Backend obtiene datos del pago
+4. Backend actualiza el estado de la orden según el resultado del pago
+5. Backend envía email de notificación al cliente
+
+**Configuración en MercadoPago**:
+En el dashboard de MercadoPago, configurar la URL de webhook:
+```
+https://tu-backend.com/api/v1/orders/webhook
+```
+
 ---
 
 ## Endpoints de Configuración
@@ -1479,12 +1516,27 @@ curl -X PUT http://localhost:3000/api/v1/config \
 6. **Usuario completa pago** en la página de MercadoPago
 7. **MercadoPago redirecciona**a `/checkout/success?orderId=...`
 
-### Webhook (Opcional)
+### Webhook (Automático)
 
-Para actualizar automáticamente el estado de la orden cuando se confirma el pago:
+El webhook está configurado para recibir notificaciones automáticas de MercadoPago cuando el estado del pago cambia:
 
-1. Configurar webhook en MercadoPago dashboard: `https://tu-backend.com/api/v1/orders/webhook`
-2. El backend recibe la notificación y actualiza el estado de la orden
+1. **Configurar en MercadoPago**: Ir a Webhooks en el dashboard y configurar:
+   ```
+   https://tu-backend.com/api/v1/orders/webhook
+   ```
+2. **Topic**: Seleccionar `Pagos` (payments)
+3. **El backend procesa automáticamente**:
+   - Recibe la notificación
+   - Obtiene datos del pago via API
+   - Actualiza el estado de la orden
+   - Envía email de notificación al cliente
+
+**Notificaciones por email**:
+Cuando el estado de una orden cambia (vía webhook o actualización manual), el sistema envía un email al cliente con:
+- Número de pedido
+- Nuevo estado
+- Detalle de items
+- Total
 
 ### Estados de Orden
 
