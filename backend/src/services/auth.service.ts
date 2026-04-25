@@ -255,7 +255,7 @@ export const googleLogin = async (data: GoogleLoginData): Promise<AuthResult> =>
     throw new Error('Error al procesar login con Google');
   }
 
-  const roleName = (user?.role as any)?.name || 'user';
+  const roleName = (user?.role as unknown as { name?: string })?.name || 'user';
 
   const payload: TokenPayload = {
     userId: user!._id.toString(),

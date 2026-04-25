@@ -286,8 +286,8 @@ export const userHasRatedProduct = async (
   if (product && product.ratings && product.ratings.length > 0) {
     return {
       hasRated: true,
-      ratingId: (product.ratings[0] as any)._id?.toString(),
-      existingRating: (product.ratings[0] as any).rating
+      ratingId: (product.ratings[0] as IRating)._id?.toString(),
+      existingRating: (product.ratings[0] as IRating).rating
     };
   }
   return { hasRated: false };
@@ -384,7 +384,7 @@ export const getFacets = async (): Promise<{
     { tags: 1 }
   ).lean();
 
-  productsWithTags.forEach((p: any) => {
+  productsWithTags.forEach((p: IProductDocument) => {
     if (p.tags) {
       p.tags.forEach((tag: string) => {
         tagCounts[tag] = (tagCounts[tag] || 0) + 1;

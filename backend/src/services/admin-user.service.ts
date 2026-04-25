@@ -202,7 +202,7 @@ export const deleteUser = async (userId: string): Promise<boolean> => {
 
 export const getAllRoles = async (): Promise<{ id: string; name: string }[]> => {
   const roles = await Role.find().select('_id name').lean();
-  return roles.map((role: any) => ({
+  return roles.map((role) => ({
     id: role._id.toString(),
     name: role.name,
   }));

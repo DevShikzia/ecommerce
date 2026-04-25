@@ -121,7 +121,7 @@ frontend-admin/
 - Valoraciones: [{ usuario, puntuación, comentario }]
 
 ### Usuario
-- Campos: nombre, email (único), password (hasheado), rol (ref), dirección{}, teléfono, avatar, googleId (opcional), verificado, resetToken
+- Campos: nombre, email (único), password (hasheado), rol (ref), dirección{}, teléfono, avatar, googleId (opcional), verificado, isActive (activo/desactivo), resetToken
 
 ### Orden
 - Campos: usuario (ref), items[{ producto, cantidad, precio }], direccionEnvio{}, infoPago{}, precioTotal, estado, metodoPago, fecha
